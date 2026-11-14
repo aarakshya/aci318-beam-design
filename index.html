@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RC Beam Flexure Design (ACI 318)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f4ef; --panel:#ffffff; --ink:#1d2329; --muted:#5d6670; --line:#d9d6cc;
+  --accent:#1f4e79; --accent-soft:#e6eef6;
+  --pass:#1e7a46; --pass-bg:#e3f3e9; --fail:#b3261e; --fail-bg:#fbe5e3; --info:#7a5a00; --info-bg:#fbf1d6;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+header{background:var(--ink);color:#fff;padding:22px 28px}
+header h1{margin:0;font-size:21px;font-weight:600}
+header p{margin:4px 0 0;color:#b9c2cb;font-size:13.5px}
+.wrap{display:grid;grid-template-columns:370px 1fr;gap:22px;padding:22px 28px;max-width:1500px;margin:0 auto}
+@media (max-width:980px){.wrap{grid-template-columns:1fr;padding:16px}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px}
+aside.panel{padding:16px 18px;align-self:start;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
+@media (max-width:980px){aside.panel{position:static;max-height:none}}
+h2{font-size:15px;margin:0 0 10px;font-weight:600;letter-spacing:.2px}
+h3{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:16px 0 6px;font-weight:600}
+.field{display:grid;grid-template-columns:1fr 104px 46px;align-items:center;gap:6px;margin:5px 0}
+.field label{font-size:13.5px}
+.field input,.field select{width:100%;padding:5px 6px;border:1px solid var(--line);border-radius:4px;font:13.5px "IBM Plex Mono",monospace;background:#fcfbf8}
+.field select,.field input[type=text]{font-family:"IBM Plex Sans",sans-serif}
+.field .u{font-size:12px;color:var(--muted)}
+.field.wide{grid-template-columns:1fr 160px}
+.btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+button{font:500 13px "IBM Plex Sans",sans-serif;padding:7px 12px;border-radius:4px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer}
+button.ghost{background:#fff;color:var(--accent)}
+button.calc-btn{width:100%;padding:11px;font-size:15px;font-weight:600;margin-top:16px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.note{font-size:12.5px;color:var(--muted);margin-top:8px}
+.sub{font-size:12.5px;font-weight:600;color:var(--accent);margin:12px 0 2px}
+.hint{font-size:12px;line-height:1.45;margin:6px 0 4px;padding:6px 9px;border-radius:4px;background:#f4f6f8;border-left:3px solid var(--muted)}
+.hint.ok{border-left-color:var(--pass);background:#f1f8f3}
+.hint.bad{border-left-color:var(--fail);background:#fdf2f1}
+.hint.na{border-left-color:#c9c5b8}
+.hint b{font-weight:600}
+.hints-stale .hint{opacity:.45}
+#toast{font-size:12.5px;min-height:18px;margin-top:6px;color:var(--accent)}
+main{display:flex;flex-direction:column;gap:22px;min-width:0}
+#results{display:flex;flex-direction:column;gap:22px}
+.empty{padding:60px 30px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--ink);font-size:17px;margin-bottom:6px}
+.stale{background:var(--info-bg);border:1px solid #ecd58f;color:var(--info);border-radius:6px;padding:10px 16px;font-size:14px}
+.verdict{display:flex;align-items:center;gap:18px;padding:18px 22px;border-radius:6px;border:1px solid}
+.verdict.pass{background:var(--pass-bg);border-color:#a9d6b9}
+.verdict.fail{background:var(--fail-bg);border-color:#efb3ad}
+.verdict .big{font-size:26px;font-weight:600;letter-spacing:.5px}
+.verdict.pass .big{color:var(--pass)} .verdict.fail .big{color:var(--fail)}
+.verdict .txt{font-size:14px}
+section.panel{padding:18px 22px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:600;background:#f0eee7;font-size:12.5px}
+td.num{font-family:"IBM Plex Mono",monospace}
+tr.grp td{background:#f7f6f1;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+tr.total td{font-weight:600;background:#f7f6f1;border-top:2px solid var(--ink)}
+.tscroll{overflow-x:auto}
+.badge{display:inline-block;padding:2px 9px;border-radius:3px;font:600 12px "IBM Plex Sans",sans-serif;letter-spacing:.4px}
+.badge.pass{background:var(--pass-bg);color:var(--pass)}
+.badge.fail{background:var(--fail-bg);color:var(--fail)}
+.badge.info{background:var(--info-bg);color:var(--info)}
+.part{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--accent);margin:22px 0 4px;font-weight:600;border-bottom:2px solid var(--accent-soft);padding-bottom:4px}
+.part:first-child{margin-top:0}
+.step{border-top:1px solid var(--line);padding:14px 0}
+.part + .step{border-top:none}
+.step-h{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+.step-h b{font-size:14.5px}
+.ref{font-size:12px;color:var(--accent);background:var(--accent-soft);padding:2px 8px;border-radius:3px;white-space:nowrap}
+.calc{font-family:"IBM Plex Mono",monospace;font-size:13px;background:#faf9f5;border:1px solid #ebe8de;border-radius:4px;padding:9px 12px;margin-top:8px;overflow-x:auto;line-height:1.75}
+.calc .r{font-weight:600;color:var(--accent)}
+.step p{margin:6px 0 0;font-size:13.5px;color:#333a41}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+@media (max-width:1200px){.grid2{grid-template-columns:1fr}}
+.figs{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.figs svg{max-width:100%;height:auto}
+.detail{display:flex;flex-direction:column;gap:18px;align-items:center}
+.detail svg{max-width:100%;height:auto;background:#fff}
+.figcap{font-size:12.5px;color:var(--muted);text-align:center;margin-top:-8px}
+h4{font-size:13.5px;margin:18px 0 8px}
+.refs li{font-size:13px;margin:3px 0}
+.footnote{font-size:12.5px;color:var(--muted);text-align:center;margin:4px 0 0;padding-top:10px;border-top:1px solid var(--line)}
+.signoff{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--ink);border-radius:6px;background:#fff;overflow:hidden}
+.signoff div{padding:12px 16px;border-right:1px solid var(--line)}
+.signoff div:last-child{border-right:none}
+.signoff span{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)}
+.signoff b{font-size:15px;font-weight:600}
+@media (max-width:760px){.signoff{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>RC Rectangular Beam Design to ACI 318</h1>
+  <p>Flexure, shear, detailing and serviceability checks for a singly reinforced beam. SI units.</p>
+</header>
+
+<div class="wrap">
+<aside class="panel">
+<form id="form" autocomplete="off">
+  <h2>Input parameters</h2>
+
+  <h3>Job</h3>
+  <div class="field wide"><label>Project</label><input id="proj" type="text" placeholder="optional"></div>
+  <div class="field wide"><label>Beam mark</label><input id="mark" type="text" placeholder="e.g. B1"></div>
+
+  <h3>Code and member</h3>
+  <div class="field wide"><label>ACI 318 edition</label>
+    <select id="ed"><option value="25">ACI 318-25</option><option value="19">ACI 318-19</option><option value="14">ACI 318-14</option></select></div>
+  <div class="field wide"><label>Support condition</label>
+    <select id="support"><option value="ss">Simply supported</option><option value="one">One end continuous</option><option value="both">Both ends continuous</option><option value="cant">Cantilever</option></select></div>
+  <div class="field"><label>Span, L</label><input id="L" type="number" step="any"><span class="u">m</span></div>
+
+  <h3>Factored actions</h3>
+  <div class="field"><label>Moment, M<sub>u</sub></label><input id="Mu" type="number" step="any"><span class="u">kN·m</span></div>
+  <div class="field"><label>Shear at critical section, V<sub>u</sub></label><input id="Vu" type="number" step="any"><span class="u">kN</span></div>
+  <div class="field"><label>Torque at critical section, T<sub>u</sub></label><input id="Tu" type="number" step="any" min="0"><span class="u">kN·m</span></div>
+  <div class="field wide"><label>Torsion type</label>
+    <select id="ttype"><option value="eq">Equilibrium torsion</option><option value="comp">Compatibility torsion</option></select></div>
+
+  <h3>Materials</h3>
+  <div class="field"><label>Concrete strength, f'<sub>c</sub></label><input id="fc" type="number" step="any"><span class="u">MPa</span></div>
+  <div class="field"><label>Main bar yield, f<sub>y</sub></label><input id="fy" type="number" step="any"><span class="u">MPa</span></div>
+  <div class="field"><label>Stirrup yield, f<sub>yt</sub></label><input id="fyt" type="number" step="any"><span class="u">MPa</span></div>
+  <div class="field"><label>Steel modulus, E<sub>s</sub></label><input id="Es" type="number" step="any"><span class="u">MPa</span></div>
+  <div class="field"><label>Concrete strain, ε<sub>cu</sub></label><input id="ecu" type="number" step="any"><span class="u">–</span></div>
+
+  <h3>Section</h3>
+  <div class="field"><label>Width, b<sub>w</sub></label><input id="b" type="number" step="any"><span class="u">mm</span></div>
+  <div class="field"><label>Overall depth, h</label><input id="h" type="number" step="any"><span class="u">mm</span></div>
+  <div class="field wide"><label>Effective depth in design</label>
+    <select id="dmode"><option value="detail">From detailing</option><option value="input">Use d entered below</option></select></div>
+  <div class="field"><label>Effective depth, d</label><input id="d" type="number" step="any"><span class="u">mm</span></div>
+
+  <h3>Main (tension) bars</h3>
+  <div class="field"><label>Number of bars, n</label><input id="n" type="number" step="1" min="1"><span class="u">nos</span></div>
+  <div class="field"><label>Bar diameter, d<sub>b</sub></label><input id="db" type="number" step="any"><span class="u">mm</span></div>
+
+  <div class="hint" id="hint_main" hidden></div>
+
+  <h3>Shear and torsion reinforcement</h3>
+  <div class="sub">Closed stirrups: transverse steel for shear and torsion</div>
+  <div class="field"><label>Stirrup diameter, d<sub>s</sub></label><input id="ds" type="number" step="any"><span class="u">mm</span></div>
+  <div class="field"><label>Number of legs</label><input id="legs" type="number" step="1" min="0"><span class="u">nos</span></div>
+  <div class="field"><label>Spacing, s</label><input id="s" type="number" step="any"><span class="u">mm</span></div>
+  <div class="hint" id="hint_stir" hidden></div>
+  <div class="sub">Hanger bars, compression face: torsion longitudinal steel</div>
+  <div class="field"><label>Number of bars</label><input id="nt" type="number" step="1" min="2"><span class="u">nos</span></div>
+  <div class="field"><label>Bar diameter</label><input id="dbt" type="number" step="any"><span class="u">mm</span></div>
+  <div class="hint" id="hint_hang" hidden></div>
+  <div class="sub">Side bars, each vertical face: torsion longitudinal steel</div>
+  <div class="field"><label>Number per face</label><input id="nside" type="number" step="1" min="0"><span class="u">nos</span></div>
+  <div class="field"><label>Bar diameter</label><input id="dbs" type="number" step="any"><span class="u">mm</span></div>
+  <div class="hint" id="hint_side" hidden></div>
+
+  <h3>Durability and concrete</h3>
+  <div class="field wide"><label>Exposure</label>
+    <select id="exposure"><option value="int">Not exposed to weather or ground</option><option value="ext">Exposed to weather or ground</option><option value="earth">Cast against earth</option></select></div>
+  <div class="field"><label>Clear cover to stirrup</label><input id="cov" type="number" step="any"><span class="u">mm</span></div>
+  <div class="field"><label>Max aggregate size</label><input id="agg" type="number" step="any"><span class="u">mm</span></div>
+
+  <button type="submit" class="calc-btn" id="calcBtn">Calculate</button>
+</form>
+
+  <h3>Export</h3>
+  <div class="btns" style="margin-top:4px">
+    <button id="pdf" disabled>Export PDF</button>
+    <button id="xls" disabled>Export Excel</button>
+    <button class="ghost" id="copy" disabled>Copy report text</button>
+  </div>
+  <div id="toast"></div>
+  <p class="note">Assumptions: one layer of tension bars, hanger bars not counted in strength, normal-weight concrete, uncoated bars, no axial force, solid section, θ = 45° for torsion, nonseismic design.</p>
+</aside>
+
+<main>
+  <section class="panel empty" id="empty"><b>No results yet</b>Enter the input parameters and click Calculate.</section>
+  <div id="results" hidden>
+    <div class="stale" id="stale" hidden>Inputs have changed since the last calculation. Click Calculate to update the results.</div>
+    <div id="verdict" class="verdict"></div>
+
+    <section class="panel">
+      <h2>Check summary</h2>
+      <div class="tscroll"><table id="checks"></table></div>
+    </section>
+
+    <div class="grid2">
+      <section class="panel">
+        <h2>Input summary</h2>
+        <table id="inputs"></table>
+      </section>
+      <section class="panel">
+        <h2>Flexural strain diagram</h2>
+        <div class="figs" id="figs"></div>
+        <p class="note" style="text-align:center">Drawn with the tension face at the bottom.</p>
+      </section>
+    </div>
+
+    <section class="panel">
+      <h2>Design procedure</h2>
+      <div id="steps"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Outcome and summary</h2>
+      <div id="summary"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Reinforcement detail</h2>
+      <div class="detail" id="detail"></div>
+      <h4>Bar schedule</h4>
+      <div class="tscroll"><table id="schedule"></table></div>
+    </section>
+
+    <section class="panel">
+      <h2>References</h2>
+      <ul class="refs" id="refs"></ul>
+    </section>
+  </div>
+  <p class="footnote">Developed by Aarakshya Kandel</p>
+</main>
+</div>
+
+<script src="lib/jspdf.umd.min.js"></script>
+<script src="lib/jspdf.plugin.autotable.min.js"></script>
+<script src="lib/xlsx.mini.min.js"></script>
+<script src="lib/fonts.js"></script>
+<script>
+const AUTHOR = "Aarakshya Kandel";
+const DEFAULTS = {ed:"19",support:"ss",L:6,Mu:250,Vu:170,Tu:0,ttype:"eq",nside:0,dbs:12,fc:25,fy:420,fyt:420,Es:200000,ecu:0.003,b:300,h:550,dmode:"detail",d:487.5,
+                  n:3,db:25,nt:2,dbt:12,ds:10,legs:2,s:150,exposure:"int",cov:40,agg:20};
+const ids = Object.keys(DEFAULTS);
+const NUM = ["L","Mu","Vu","fc","fy","fyt","Es","ecu","b","h","d","n","db","nt","dbt","ds","s","cov","agg"];
+const ED_NAME = {"25":"ACI 318-25","19":"ACI 318-19","14":"ACI 318-14"};
+const SUP_NAME = {ss:"Simply supported", one:"One end continuous", both:"Both ends continuous", cant:"Cantilever"};
+const EXP_NAME = {int:"Not exposed to weather or ground", ext:"Exposed to weather or ground", earth:"Cast against earth"};
+const REFS = [
+  "ACI CODE-318-25, Building Code for Structural Concrete, American Concrete Institute, 2025.",
+  "ACI 318-19, Building Code Requirements for Structural Concrete, American Concrete Institute, 2019 (SI edition ACI 318M-19).",
+  "ACI 318-14, Building Code Requirements for Structural Concrete, American Concrete Institute, 2014.",
+  "Materials: 19.2.1.1 minimum f'c = 17 MPa; Table 20.2.2.4(a) maximum f<sub>y</sub> 550 MPa for flexure and f<sub>yt</sub> 420 MPa for shear (nonseismic); 22.5.3.1 and 25.4.1.4 √f'c ≤ 8.3 MPa.",
+  "Cover: Table 20.5.1.3.1, cast-in-place nonprestressed concrete.",
+  "Minimum depth: Table 9.3.1.1, beams not supporting partitions likely to be damaged by deflection.",
+  "Flexure: 22.2.2.1 ε<sub>cu</sub> = 0.003; 22.2.2.4.1 stress block 0.85f'c over a = β<sub>1</sub>c; Table 22.2.2.4.3 β<sub>1</sub>; Table 21.2.2 φ; 9.3.3.1 strain limit (tension-controlled in 318-19 and 318-25, ε<sub>t</sub> ≥ 0.004 in 318-14); 9.5.1.1 φM<sub>n</sub> ≥ M<sub>u</sub>; 9.6.1.2 minimum flexural steel.",
+  "318-25, 21.2.2.3 caps φ only where 0.1f'cA<sub>g</sub> ≤ P<sub>n</sub> ≤ P<sub>n,bal</sub>, so it has no effect on a beam without axial load.",
+  "Shear: 21.2.1 φ = 0.75; 22.5.1.2 section limit; Table 22.5.5.1 V<sub>c</sub> (318-19 and 318-25), 22.5.5.1 (318-14); 22.5.8.5.3 V<sub>s</sub>; 9.6.3.1 where A<sub>v,min</sub> is required; Table 9.6.3.4 (9.6.3.3 in 318-14) A<sub>v,min</sub>; 9.7.6.2.2 maximum stirrup spacing.",
+  "Torsion: 22.7.1.1 threshold; 22.7.3.2 compatibility torsion; 22.7.4.1 T<sub>th</sub>; 22.7.5.1 T<sub>cr</sub>; 22.7.6.1 A<sub>t</sub>/s and A<sub>l</sub>; 22.7.7.1 cross-section limit; 9.6.4.2 and 9.6.4.3 minimum torsion steel; 9.7.5.1 and 9.7.5.2 longitudinal bar layout; 9.7.6.3.3 stirrup spacing; 25.7.1.6 closed stirrups. 318-25 is assumed to keep these provisions.",
+  "Detailing: 25.2.1 minimum clear spacing; 24.3.2 crack-control spacing with f<sub>s</sub> = 2/3 f<sub>y</sub>; 25.4.2.3 development length of deformed bars in tension; 9.7.2.3 skin reinforcement.",
+  "Worked example basis: shared ChatGPT conversation \"Practical RCC beam design, Example 1\" (M<sub>u</sub> = 250 kN·m, 300 × 550 beam, 3-Ø25)."
+];
+const SCOPE_NOTE = "Not covered: hollow sections, lap splices, bar cut-off points, calculated deflections where the minimum depth is not met, and seismic detailing.";
+
+const $ = id => document.getElementById(id);
+const f = (x,p=2) => (x===null||x===undefined||!isFinite(x)) ? "–" : Number(x).toLocaleString("en-US",{minimumFractionDigits:p,maximumFractionDigits:p});
+const f4 = x => isFinite(x) ? x.toFixed(5) : "–";
+const strip = s => String(s).replace(/<sub>(.*?)<\/sub>/g,"$1").replace(/<[^>]+>/g,"").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&amp;/g,"&");
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+const today = () => new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
+
+function read(){
+  const v = {};
+  ids.forEach(k => { const el=$(k); v[k] = (el.tagName==="SELECT") ? el.value : parseFloat(el.value); });
+  v.legs = parseFloat($("legs").value);
+  v.Tu = parseFloat($("Tu").value); v.nside = parseFloat($("nside").value);
+  v.proj = $("proj").value.trim(); v.mark = $("mark").value.trim();
+  return v;
+}
+
+let M = null, stale = false;
+
+function calculate(){
+  const v = read();
+  const bad = NUM.filter(k => !(v[k] > 0));
+  if (!(v.legs >= 0) || v.legs === 1) bad.push("legs (0 or at least 2)");
+  if (v.nt < 2) bad.push("hanger bars (at least 2)");
+  if (!(v.Tu >= 0)) bad.push("Tu (0 or more)");
+  if (!(v.nside >= 0) || v.nside % 1) bad.push("side bars per face (0 or more)");
+  if (!(v.dbs > 0)) bad.push("side bar diameter");
+  if (bad.length){ toast("Check these inputs: " + bad.join(", "), true); return; }
+
+  const {L,Mu,Vu,Tu,fc,fy,fyt,Es,ecu,b,h,n,db,nt,dbt,ds,legs,s,cov,agg,support,exposure,ttype,nside,dbs} = v;
+  const ed = v.ed, edName = ED_NAME[ed], modern = ed !== "14";
+  const lam = 1.0;
+  const steps = [], checks = [];
+  let part = "";
+  const P = name => { part = name; };
+  const S = (title, ref, lines, note) => steps.push({part, title, ref, lines: lines.filter(Boolean), note});
+  const C = (group, name, ref, demand, capacity, ok, info) => checks.push({group, name, ref, demand, capacity, ok, info});
+  const sqfc = Math.min(Math.sqrt(fc), 8.3);
+
+  // ================= A. Materials, cover, minimum depth =================
+  P("A. Materials, cover and minimum depth");
+  const fytE = Math.min(fyt, 420);
+  S("Material limits", "19.2.1.1, Table 20.2.2.4(a)",
+    [`f'c = ${f(fc,1)} MPa (minimum 17 MPa)`,
+     `f<sub>y</sub> = ${f(fy,0)} MPa (maximum 550 MPa for flexural bars)`,
+     `f<sub>yt</sub> = ${f(fyt,0)} MPa; value used for shear = min(f<sub>yt</sub>, 420) = <span class="r">${f(fytE,0)} MPa</span>`,
+     `√f'c = ${f(Math.sqrt(fc),2)} MPa; value used for shear and development = min(√f'c, 8.3) = <span class="r">${f(sqfc,2)} MPa</span>`]);
+  C("Materials and cover","Concrete strength f'c ≥ 17 MPa","19.2.1.1","≥ 17 MPa",`${f(fc,1)} MPa`, fc >= 17);
+  C("Materials and cover","Main bar f<sub>y</sub> ≤ 550 MPa","Table 20.2.2.4(a)","≤ 550 MPa",`${f(fy,0)} MPa`, fy <= 550);
+
+  const covReq = d0 => exposure==="earth" ? 75 : (exposure==="ext" ? (d0 >= 19 ? 50 : 40) : 40);
+  const covStirReq = covReq(ds), covBarReq = covReq(db), covBar = cov + ds;
+  S("Concrete cover", "Table 20.5.1.3.1",
+    [`Exposure: ${EXP_NAME[exposure]}`,
+     `Stirrups (Ø${f(ds,0)}): required ${covStirReq} mm, provided ${f(cov,0)} mm`,
+     `Main bars (Ø${f(db,0)}): required ${covBarReq} mm, provided cover + d<sub>s</sub> = ${f(cov,0)} + ${f(ds,0)} = <span class="r">${f(covBar,0)} mm</span>`]);
+  C("Materials and cover","Cover to stirrups","Table 20.5.1.3.1",`≥ ${covStirReq} mm`,`${f(cov,0)} mm`, cov >= covStirReq);
+  C("Materials and cover","Cover to main bars","Table 20.5.1.3.1",`≥ ${covBarReq} mm`,`${f(covBar,0)} mm`, covBar >= covBarReq);
+
+  const denH = {ss:16, one:18.5, both:21, cant:8}[support];
+  const fyFac = fy === 420 ? 1 : 0.4 + fy/700;
+  const hmin = L*1000/denH*fyFac;
+  S("Minimum depth for deflection", "Table 9.3.1.1",
+    [`${SUP_NAME[support]}: h<sub>min</sub> = ℓ/${denH}${fy===420 ? "" : ` × (0.4 + f<sub>y</sub>/700) = ℓ/${denH} × ${f(fyFac,3)}`}`,
+     `h<sub>min</sub> = ${f(L*1000,0)}/${denH}${fy===420?"":` × ${f(fyFac,3)}`} = <span class="r">${f(hmin,0)} mm</span>; provided h = ${f(h,0)} mm`],
+    "If h is less than h<sub>min</sub>, deflections must be calculated per 24.2 before the section can be accepted.");
+  C("Serviceability","Minimum depth (deflection not calculated)","Table 9.3.1.1",`≥ ${f(hmin,0)} mm`,`h = ${f(h,0)} mm`, h >= hmin);
+
+  // ================= B. Flexure =================
+  P("B. Flexure");
+  const dDetail = h - cov - ds - db/2;
+  const d = v.dmode === "detail" ? dDetail : v.d;
+  S("Effective depth", "Detailing",
+    [`d<sub>detail</sub> = h − cover − d<sub>s</sub> − d<sub>b</sub>/2 = ${f(h,0)} − ${f(cov,0)} − ${f(ds,0)} − ${f(db,1)}/2 = <span class="r">${f(dDetail,1)} mm</span>`,
+     `d used in design = <span class="r">${f(d,1)} mm</span> (${v.dmode==="detail"?"from detailing":"entered value"})`]);
+
+  const beta1 = fc <= 28 ? 0.85 : (fc >= 55 ? 0.65 : 0.85 - 0.05*(fc-28)/7);
+  S("Stress block factor β₁", "Table 22.2.2.4.3",
+    [fc<=28 ? `17 ≤ f'c = ${f(fc,1)} ≤ 28 MPa  →  β₁ = <span class="r">0.85</span>`
+      : fc>=55 ? `f'c = ${f(fc,1)} ≥ 55 MPa  →  β₁ = <span class="r">0.65</span>`
+      : `β₁ = 0.85 − 0.05(f'c − 28)/7 = 0.85 − 0.05(${f(fc,1)} − 28)/7 = <span class="r">${f(beta1,3)}</span>`]);
+
+  const ety = fy/Es;
+  const etc = modern ? ety + 0.003 : 0.005;
+  S("Strain limits", "21.2.2, Table 21.2.2, 9.3.3.1",
+    [`ε<sub>ty</sub> = f<sub>y</sub>/E<sub>s</sub> = ${f(fy,0)}/${f(Es,0)} = <span class="r">${f4(ety)}</span>`,
+     modern ? `Tension-controlled limit = ε<sub>ty</sub> + 0.003 = <span class="r">${f4(etc)}</span>` : `Tension-controlled limit = <span class="r">0.00500</span>`,
+     modern ? `Beams with P<sub>u</sub> &lt; 0.10f'cA<sub>g</sub> must be tension-controlled (9.3.3.1)` : `Beams must have ε<sub>t</sub> ≥ 0.004 (9.3.3.1)`]);
+
+  const Rn = Mu*1e6/(0.9*b*d*d);
+  const disc = 1 - 2*Rn/(0.85*fc);
+  let rho = NaN, AsReq = NaN;
+  if (disc >= 0){ rho = 0.85*fc/fy*(1-Math.sqrt(disc)); AsReq = rho*b*d; }
+  S("Required tension steel (assume φ = 0.90)", "9.5.1.1, 22.2",
+    [`M<sub>n,req</sub> = M<sub>u</sub>/φ = ${f(Mu,2)}/0.90 = <span class="r">${f(Mu/0.9,2)} kN·m</span>`,
+     `R<sub>n</sub> = M<sub>u</sub>/(φ b d²) = ${f(Mu*1e6,0)}/(0.90 × ${f(b,0)} × ${f(d,1)}²) = <span class="r">${f(Rn,3)} MPa</span>`,
+     disc>=0 ? `ρ = (0.85f'c/f<sub>y</sub>)[1 − √(1 − 2R<sub>n</sub>/(0.85f'c))] = (0.85×${f(fc,1)}/${f(fy,0)})[1 − √(1 − 2×${f(Rn,3)}/${f(0.85*fc,3)})] = <span class="r">${f(rho,5)}</span>`
+             : `1 − 2R<sub>n</sub>/(0.85f'c) = ${f(disc,3)} &lt; 0  →  no real solution. The section is too small for this moment.`,
+     disc>=0 ? `A<sub>s,req</sub> = ρ b d = ${f(rho,5)} × ${f(b,0)} × ${f(d,1)} = <span class="r">${f(AsReq,0)} mm²</span>` : ``]);
+
+  const fyMin = modern ? Math.min(fy, 550) : fy;
+  const Asmin1 = 0.25*Math.sqrt(fc)/fyMin*b*d, Asmin2 = 1.4/fyMin*b*d, Asmin = Math.max(Asmin1, Asmin2);
+  S("Minimum flexural reinforcement", "9.6.1.2",
+    [`A<sub>s,min</sub>(a) = 0.25√f'c b d / f<sub>y</sub> = 0.25×√${f(fc,1)}×${f(b,0)}×${f(d,1)}/${f(fyMin,0)} = ${f(Asmin1,0)} mm²`,
+     `A<sub>s,min</sub>(b) = 1.4 b d / f<sub>y</sub> = 1.4×${f(b,0)}×${f(d,1)}/${f(fyMin,0)} = ${f(Asmin2,0)} mm²`,
+     `A<sub>s,min</sub> = <span class="r">${f(Asmin,0)} mm²</span>`]);
+
+  const AsProv = n*Math.PI*db*db/4;
+  const AsDesign = isFinite(AsReq) ? Math.max(AsReq, Asmin) : NaN;
+  S("Provided reinforcement", "Selection",
+    [`A<sub>s,prov</sub> = n × π d<sub>b</sub>²/4 = ${n} × π × ${f(db,0)}²/4 = <span class="r">${f(AsProv,0)} mm²</span>  (${n}-Ø${f(db,0)})`,
+     `Governing requirement = max(A<sub>s,req</sub>, A<sub>s,min</sub>) = ${f(AsDesign,0)} mm²`]);
+
+  let a = AsProv*fy/(0.85*fc*b), c = a/beta1, et = ecu*(d-c)/c, fs = fy, yielded = true;
+  const naLines = [
+    `Assume steel yields: a = A<sub>s</sub>f<sub>y</sub>/(0.85 f'c b) = ${f(AsProv,0)}×${f(fy,0)}/(0.85×${f(fc,1)}×${f(b,0)}) = <span class="r">${f(a,2)} mm</span>`,
+    `c = a/β₁ = ${f(a,2)}/${f(beta1,3)} = <span class="r">${f(c,2)} mm</span>`];
+  if (et < ety){
+    yielded = false;
+    const A = 0.85*fc*b*beta1, B = AsProv*Es*ecu, Cc = -AsProv*Es*ecu*d;
+    c = (-B + Math.sqrt(B*B - 4*A*Cc))/(2*A);
+    a = beta1*c; et = ecu*(d-c)/c; fs = Es*et;
+    naLines.push(`Strain check gives ε<sub>s</sub> &lt; ε<sub>ty</sub>, so the steel has not yielded. Solve 0.85f'c b β₁c = A<sub>s</sub>E<sub>s</sub>ε<sub>cu</sub>(d − c)/c:`);
+    naLines.push(`c = <span class="r">${f(c,2)} mm</span>, a = β₁c = <span class="r">${f(a,2)} mm</span>, f<sub>s</sub> = E<sub>s</sub>ε<sub>t</sub> = <span class="r">${f(fs,1)} MPa</span>`);
+  }
+  S("Neutral axis depth", "22.2.2.4.1, 22.2.1.1", naLines, `c/d = ${f(c/d,3)}`);
+  S("Net tensile strain in extreme steel", "22.2.1.2, 21.2.2",
+    [`ε<sub>t</sub> = ε<sub>cu</sub>(d<sub>t</sub> − c)/c = ${f(ecu,4)}×(${f(d,1)} − ${f(c,2)})/${f(c,2)} = <span class="r">${f4(et)}</span>`,
+     `ε<sub>t</sub>/ε<sub>ty</sub> = ${f(et/ety,2)}  (${yielded?"steel yields":"steel does not yield"})`],
+    "With a single layer of bars, d<sub>t</sub> = d.");
+
+  let phi, zone;
+  if (et >= etc){ phi = 0.90; zone = "Tension-controlled"; }
+  else if (et <= ety){ phi = 0.65; zone = "Compression-controlled"; }
+  else { phi = 0.65 + 0.25*(et-ety)/(etc-ety); zone = "Transition zone"; }
+  S("Strength reduction factor φ", "Table 21.2.2",
+    [zone==="Tension-controlled" ? `ε<sub>t</sub> = ${f4(et)} ≥ ${f4(etc)}  →  tension-controlled, φ = <span class="r">0.90</span>`
+     : zone==="Compression-controlled" ? `ε<sub>t</sub> = ${f4(et)} ≤ ε<sub>ty</sub>  →  compression-controlled, φ = <span class="r">0.65</span>`
+     : `ε<sub>ty</sub> &lt; ε<sub>t</sub> &lt; ${f4(etc)}  →  transition: φ = 0.65 + 0.25(ε<sub>t</sub> − ε<sub>ty</sub>)/(${f4(etc)} − ε<sub>ty</sub>) = <span class="r">${f(phi,3)}</span>`],
+    ed==="25" ? "The φ cap of 318-25, 21.2.2.3 applies only with axial compression of 0.1f'cA<sub>g</sub> or more, so it does not apply here." : "");
+
+  const Mn = AsProv*fs*(d - a/2)/1e6, phiMn = phi*Mn;
+  S("Flexural capacity", "22.3, 9.5.1.1",
+    [`M<sub>n</sub> = A<sub>s</sub>f<sub>s</sub>(d − a/2) = ${f(AsProv,0)}×${f(fs,1)}×(${f(d,1)} − ${f(a,2)}/2)/10⁶ = <span class="r">${f(Mn,2)} kN·m</span>`,
+     `φM<sub>n</sub> = ${f(phi,3)} × ${f(Mn,2)} = <span class="r">${f(phiMn,2)} kN·m</span>`,
+     `Utilisation M<sub>u</sub>/φM<sub>n</sub> = ${f(Mu,2)}/${f(phiMn,2)} = <span class="r">${f(Mu/phiMn,3)}</span>`]);
+
+  C("Flexure","Section size adequate for M<sub>u</sub>","22.2",`R<sub>n</sub> = ${f(Rn,2)} MPa`,`≤ 0.85f'c/2 = ${f(0.425*fc,2)} MPa`, disc>=0);
+  C("Flexure","Provided steel ≥ required steel","9.5.1.1",`${f(AsDesign,0)} mm²`,`${f(AsProv,0)} mm²`, isFinite(AsDesign) && AsProv >= AsDesign);
+  C("Flexure","Provided steel ≥ minimum steel","9.6.1.2",`${f(Asmin,0)} mm²`,`${f(AsProv,0)} mm²`, AsProv >= Asmin);
+  C("Flexure","Steel yields at nominal strength","22.2.2",`≥ ε<sub>ty</sub> = ${f4(ety)}`,`ε<sub>t</sub> = ${f4(et)}`, et >= ety);
+  if (modern){
+    C("Flexure","Tension-controlled section","9.3.3.1, Table 21.2.2",`≥ ${f4(etc)}`,`ε<sub>t</sub> = ${f4(et)}`, et >= etc);
+  } else {
+    C("Flexure","Beam strain limit","9.3.3.1",`≥ 0.00400`,`ε<sub>t</sub> = ${f4(et)}`, et >= 0.004);
+    C("Flexure","Tension-controlled (φ = 0.90)","Table 21.2.2",`≥ ${f4(etc)}`,`ε<sub>t</sub> = ${f4(et)}`, et >= etc, !(et >= etc));
+  }
+  C("Flexure","Flexural strength φM<sub>n</sub> ≥ M<sub>u</sub>","9.5.1.1",`M<sub>u</sub> = ${f(Mu,1)} kN·m`,`φM<sub>n</sub> = ${f(phiMn,1)} kN·m`, phiMn >= Mu);
+
+  // ================= C. Shear =================
+  P("C. Shear");
+  const phiV = 0.75;
+  const Av = legs*Math.PI*ds*ds/4;
+  const AvminCoef = Math.max(0.062*sqfc, 0.35);
+  const Avmin = AvminCoef*b*s/fytE;
+  const avOK = Av >= Avmin;
+  const rhoW = AsProv/(b*d);
+  let Vc, vcLines = [];
+  const VcMax = 0.42*lam*sqfc*b*d/1000;
+  if (!modern){
+    Vc = 0.17*lam*sqfc*b*d/1000;
+    vcLines.push(`V<sub>c</sub> = 0.17λ√f'c b<sub>w</sub> d = 0.17×1.0×${f(sqfc,2)}×${f(b,0)}×${f(d,1)}/10³ = <span class="r">${f(Vc,1)} kN</span>`);
+  } else if (avOK){
+    const Va = 0.17*lam*sqfc*b*d/1000, Vb = 0.66*lam*Math.cbrt(rhoW)*sqfc*b*d/1000;
+    Vc = Math.max(Va, Vb);
+    vcLines.push(`A<sub>v</sub> ≥ A<sub>v,min</sub>, so V<sub>c</sub> is the larger of Table 22.5.5.1 (a) and (b); ρ<sub>w</sub> = A<sub>s</sub>/(b<sub>w</sub>d) = ${f(rhoW,5)}`);
+    vcLines.push(`(a) 0.17λ√f'c b<sub>w</sub> d = 0.17×1.0×${f(sqfc,2)}×${f(b,0)}×${f(d,1)}/10³ = ${f(Va,1)} kN`);
+    vcLines.push(`(b) 0.66λ(ρ<sub>w</sub>)<sup>1/3</sup>√f'c b<sub>w</sub> d = 0.66×1.0×${f(Math.cbrt(rhoW),4)}×${f(sqfc,2)}×${f(b,0)}×${f(d,1)}/10³ = ${f(Vb,1)} kN`);
+  } else {
+    const lamS = Math.min(Math.sqrt(2/(1+0.004*d)), 1);
+    Vc = 0.66*lamS*lam*Math.cbrt(rhoW)*sqfc*b*d/1000;
+    vcLines.push(`A<sub>v</sub> &lt; A<sub>v,min</sub>, so Table 22.5.5.1 (c) applies with size effect λ<sub>s</sub> = √(2/(1 + 0.004d)) = ${f(lamS,3)}`);
+    vcLines.push(`V<sub>c</sub> = 0.66λ<sub>s</sub>λ(ρ<sub>w</sub>)<sup>1/3</sup>√f'c b<sub>w</sub> d = 0.66×${f(lamS,3)}×1.0×${f(Math.cbrt(rhoW),4)}×${f(sqfc,2)}×${f(b,0)}×${f(d,1)}/10³ = ${f(Vc,1)} kN`);
+  }
+  if (Vc > VcMax){ Vc = VcMax; vcLines.push(`Limited to 0.42λ√f'c b<sub>w</sub> d = ${f(VcMax,1)} kN`); }
+  vcLines.push(`V<sub>c</sub> = <span class="r">${f(Vc,1)} kN</span>; φV<sub>c</sub> = 0.75 × ${f(Vc,1)} = ${f(phiV*Vc,1)} kN`);
+  S("Concrete shear strength V<sub>c</sub>", modern ? "Table 22.5.5.1" : "22.5.5.1", vcLines,
+    ed==="25" ? "318-25 adds a lower bound to V<sub>c</sub> (Eq. 22.5.5.1c). It is not applied here, which is conservative." : "");
+
+  const Vs = legs > 0 ? Av*fytE*d/s/1000 : 0;
+  const VsReq = Math.max(Vu/phiV - Vc, 0);
+  S("Stirrup contribution V<sub>s</sub>", "22.5.8.5.3",
+    [`A<sub>v</sub> = legs × π d<sub>s</sub>²/4 = ${legs} × π × ${f(ds,0)}²/4 = <span class="r">${f(Av,1)} mm²</span>`,
+     `V<sub>s,req</sub> = V<sub>u</sub>/φ − V<sub>c</sub> = ${f(Vu,1)}/0.75 − ${f(Vc,1)} = ${f(VsReq,1)} kN`,
+     legs > 0 ? `V<sub>s</sub> = A<sub>v</sub>f<sub>yt</sub>d/s = ${f(Av,1)}×${f(fytE,0)}×${f(d,1)}/${f(s,0)}/10³ = <span class="r">${f(Vs,1)} kN</span>` : `No stirrups: V<sub>s</sub> = 0`]);
+
+  const VsLimit = 0.66*sqfc*b*d/1000;
+  const phiVn = phiV*(Vc + Vs);
+  S("Shear capacity and section limit", "22.5.1.1, 22.5.1.2",
+    [`φV<sub>n</sub> = φ(V<sub>c</sub> + V<sub>s</sub>) = 0.75×(${f(Vc,1)} + ${f(Vs,1)}) = <span class="r">${f(phiVn,1)} kN</span>`,
+     `Section limit: V<sub>u</sub> ≤ φ(V<sub>c</sub> + 0.66√f'c b<sub>w</sub>d) = 0.75×(${f(Vc,1)} + ${f(VsLimit,1)}) = ${f(phiV*(Vc+VsLimit),1)} kN`,
+     `Utilisation V<sub>u</sub>/φV<sub>n</sub> = ${f(Vu,1)}/${f(phiVn,1)} = <span class="r">${f(Vu/phiVn,3)}</span>`]);
+
+  const AvminTrig = modern ? phiV*0.083*lam*sqfc*b*d/1000 : 0.5*phiV*Vc;
+  const AvminNeeded = Vu > AvminTrig;
+  S("Minimum shear reinforcement", modern ? "9.6.3.1, Table 9.6.3.4" : "9.6.3.1, Table 9.6.3.3",
+    [modern ? `A<sub>v,min</sub> required where V<sub>u</sub> &gt; φ0.083λ√f'c b<sub>w</sub>d = ${f(AvminTrig,1)} kN  →  ${AvminNeeded?"required":"not required"}`
+            : `A<sub>v,min</sub> required where V<sub>u</sub> &gt; 0.5φV<sub>c</sub> = ${f(AvminTrig,1)} kN  →  ${AvminNeeded?"required":"not required"}`,
+     `A<sub>v,min</sub> = max(0.062√f'c, 0.35) b<sub>w</sub>s/f<sub>yt</sub> = ${f(AvminCoef,3)}×${f(b,0)}×${f(s,0)}/${f(fytE,0)} = <span class="r">${f(Avmin,1)} mm²</span>; provided A<sub>v</sub> = ${f(Av,1)} mm²`]);
+
+  const highVs = Vs > 0.33*sqfc*b*d/1000;
+  const sMaxLong = highVs ? Math.min(d/4, 300) : Math.min(d/2, 600);
+  const sMaxTrans = highVs ? Math.min(d/2, 300) : Math.min(d, 600);
+  const legSpacing = legs > 1 ? (b - 2*cov - ds)/(legs - 1) : 0;
+  S("Maximum stirrup spacing", "9.7.6.2.2",
+    [`0.33√f'c b<sub>w</sub>d = ${f(0.33*sqfc*b*d/1000,1)} kN; V<sub>s</sub> = ${f(Vs,1)} kN  →  ${highVs?"V<sub>s</sub> exceeds this, limits halved":"V<sub>s</sub> within this, normal limits"}`,
+     `Along the span: s<sub>max</sub> = ${highVs?"min(d/4, 300)":"min(d/2, 600)"} = <span class="r">${f(sMaxLong,0)} mm</span>; provided s = ${f(s,0)} mm`,
+     legs > 1 ? `Across the width: leg spacing = (b<sub>w</sub> − 2·cover − d<sub>s</sub>)/(legs − 1) = ${f(legSpacing,0)} mm; limit ${highVs?"min(d/2, 300)":"min(d, 600)"} = ${f(sMaxTrans,0)} mm` : ``]);
+
+  C("Shear","Section size for shear","22.5.1.2",`V<sub>u</sub> = ${f(Vu,1)} kN`,`≤ ${f(phiV*(Vc+VsLimit),1)} kN`, Vu <= phiV*(Vc+VsLimit));
+  C("Shear","Shear strength φV<sub>n</sub> ≥ V<sub>u</sub>","22.5.1.1",`V<sub>u</sub> = ${f(Vu,1)} kN`,`φV<sub>n</sub> = ${f(phiVn,1)} kN`, phiVn >= Vu);
+  C("Shear","Minimum shear reinforcement", modern ? "9.6.3.1, Table 9.6.3.4" : "9.6.3.1, Table 9.6.3.3",
+    AvminNeeded ? `≥ ${f(Avmin,1)} mm²` : "Not required", `${f(Av,1)} mm²`, !AvminNeeded || avOK);
+  if (legs > 0){
+    C("Shear","Stirrup spacing along span","9.7.6.2.2",`≤ ${f(sMaxLong,0)} mm`,`${f(s,0)} mm`, s <= sMaxLong);
+    if (legs > 1) C("Shear","Stirrup leg spacing across width","9.7.6.2.2",`≤ ${f(sMaxTrans,0)} mm`,`${f(legSpacing,0)} mm`, legSpacing <= sMaxTrans);
+  }
+
+  // ================= D. Torsion =================
+  P("D. Torsion");
+  const phiT = 0.75;
+  const Acp = b*h, pcp = 2*(b+h);
+  const x1 = b - 2*cov - ds, y1 = h - 2*cov - ds, Aoh = x1*y1, ph = 2*(x1 + y1), Ao = 0.85*Aoh;
+  const Tth = 0.083*lam*sqfc*Acp*Acp/pcp/1e6, Tcr = 0.33*lam*sqfc*Acp*Acp/pcp/1e6;
+  let TuD = Tu, tReduced = false;
+  if (ttype === "comp" && Tu > phiT*Tcr){ TuD = phiT*Tcr; tReduced = true; }
+  const torsionReq = TuD >= phiT*Tth;
+  S("Torsion threshold and cracking torque", "22.7.1.1, 22.7.4.1, 22.7.5.1",
+    [`A<sub>cp</sub> = b h = ${f(b,0)} × ${f(h,0)} = ${f(Acp,0)} mm²; p<sub>cp</sub> = 2(b + h) = ${f(pcp,0)} mm`,
+     `T<sub>th</sub> = 0.083λ√f'c (A<sub>cp</sub>²/p<sub>cp</sub>) = 0.083×1.0×${f(sqfc,2)}×(${f(Acp,0)}²/${f(pcp,0)})/10⁶ = <span class="r">${f(Tth,2)} kN·m</span>; φT<sub>th</sub> = ${f(phiT*Tth,2)} kN·m`,
+     `T<sub>cr</sub> = 0.33λ√f'c (A<sub>cp</sub>²/p<sub>cp</sub>) = <span class="r">${f(Tcr,2)} kN·m</span>; φT<sub>cr</sub> = ${f(phiT*Tcr,2)} kN·m`,
+     ttype==="comp" ? `Compatibility torsion: T<sub>u</sub> may be reduced to φT<sub>cr</sub> (22.7.3.2). Design T<sub>u</sub> = ${tReduced ? `${f(TuD,2)} kN·m (reduced from ${f(Tu,2)} kN·m)` : `${f(TuD,2)} kN·m`}` : `Equilibrium torsion: design T<sub>u</sub> = ${f(TuD,2)} kN·m (no redistribution)`,
+     torsionReq ? `T<sub>u</sub> = ${f(TuD,2)} ≥ φT<sub>th</sub> = ${f(phiT*Tth,2)} kN·m  →  <span class="r">torsion must be designed for</span>`
+                : `T<sub>u</sub> = ${f(TuD,2)} &lt; φT<sub>th</sub> = ${f(phiT*Tth,2)} kN·m  →  <span class="r">torsion may be neglected</span>`],
+    tReduced ? "With a reduced T<sub>u</sub>, the moments and shears in the adjoining members must be redistributed (22.7.3.3)." : "");
+
+  let At_s = 0, Al = 0, AlTB = 0, AlSide = 0, tCheck = null;
+  const Ab = Math.PI*ds*ds/4;
+  const AsHang = nt*Math.PI*dbt*dbt/4, AsSide = nside*Math.PI*dbs*dbs/4;
+  if (torsionReq){
+    At_s = TuD*1e6/(phiT*2*Ao*fytE);
+    const AlCalc = At_s*ph*(fytE/fy);
+    const AtUse = Math.max(At_s, 0.175*b/fytE);
+    const AlMin = Math.max(0.42*sqfc*Acp/fy - AtUse*ph*fytE/fy, 0);
+    Al = Math.max(AlCalc, AlMin);
+    AlTB = Al*x1/ph; AlSide = Al*y1/ph;
+    const vSec = Math.sqrt(Math.pow(Vu*1e3/(b*d),2) + Math.pow(TuD*1e6*ph/(1.7*Aoh*Aoh),2));
+    const vLim = phiT*(Vc*1e3/(b*d) + 0.66*sqfc);
+    const AvReqS = VsReq*1e3/(fytE*d);
+    const perLegDem = legs > 0 ? AvReqS/legs + At_s : Infinity, perLegProv = Ab/s;
+    const combMin = Math.max(0.062*sqfc, 0.35)*b/fytE, combProv = legs*Ab/s;
+    const sMaxT = Math.min(ph/8, 300);
+    const AsFlexNeed = isFinite(AsDesign) ? AsDesign : Infinity;
+    const vertGap = y1/(nside + 1);
+    const hangCC = nt > 1 ? (inner0() - dbt)/(nt - 1) : 0;
+    const mainCC = n > 1 ? (inner0() - db)/(n - 1) : 0;
+    const perimMax = Math.max(vertGap, hangCC, mainCC);
+    const dbMinT = Math.max(0.042*s, 10);
+    const dbLong = Math.min(db, dbt, nside > 0 ? dbs : Infinity);
+    function inner0(){ return b - 2*cov - 2*ds; }
+    S("Section properties for torsion", "22.7.6.1",
+      [`Centreline of closed stirrup: x<sub>1</sub> = b − 2·cover − d<sub>s</sub> = ${f(x1,0)} mm; y<sub>1</sub> = h − 2·cover − d<sub>s</sub> = ${f(y1,0)} mm`,
+       `A<sub>oh</sub> = x<sub>1</sub>y<sub>1</sub> = ${f(Aoh,0)} mm²; p<sub>h</sub> = 2(x<sub>1</sub> + y<sub>1</sub>) = ${f(ph,0)} mm; A<sub>o</sub> = 0.85A<sub>oh</sub> = <span class="r">${f(Ao,0)} mm²</span>; θ = 45°`]);
+    S("Cross-section limit for combined shear and torsion", "22.7.7.1",
+      [`√[(V<sub>u</sub>/b<sub>w</sub>d)² + (T<sub>u</sub>p<sub>h</sub>/1.7A<sub>oh</sub>²)²] = √[(${f(Vu*1e3/(b*d),3)})² + (${f(TuD*1e6*ph/(1.7*Aoh*Aoh),3)})²] = <span class="r">${f(vSec,3)} MPa</span>`,
+       `φ(V<sub>c</sub>/b<sub>w</sub>d + 0.66√f'c) = 0.75×(${f(Vc*1e3/(b*d),3)} + ${f(0.66*sqfc,3)}) = <span class="r">${f(vLim,3)} MPa</span>`]);
+    S("Transverse reinforcement for torsion", "22.7.6.1, 9.6.4.2, 9.7.6.3.3",
+      [`A<sub>t</sub>/s = T<sub>u</sub>/(φ 2A<sub>o</sub>f<sub>yt</sub> cotθ) = ${f(TuD*1e6,0)}/(0.75×2×${f(Ao,0)}×${f(fytE,0)}×1.0) = <span class="r">${f(At_s,4)} mm²/mm</span> per leg`,
+       `Shear: A<sub>v</sub>/s required = V<sub>s,req</sub>/(f<sub>yt</sub>d) = ${f(AvReqS,4)} mm²/mm over ${legs} legs`,
+       legs > 0 ? `Demand per outer leg = (A<sub>v</sub>/s)/legs + A<sub>t</sub>/s = ${f(AvReqS/legs,4)} + ${f(At_s,4)} = <span class="r">${f(perLegDem,4)} mm²/mm</span>; provided A<sub>b</sub>/s = ${f(Ab,1)}/${f(s,0)} = ${f(perLegProv,4)} mm²/mm` : `No stirrups provided`,
+       `Minimum: (A<sub>v</sub> + 2A<sub>t</sub>)/s ≥ max(0.062√f'c, 0.35)b<sub>w</sub>/f<sub>yt</sub> = ${f(combMin,4)} mm²/mm; provided ${f(combProv,4)} mm²/mm`,
+       `Spacing: s ≤ min(p<sub>h</sub>/8, 300) = <span class="r">${f(sMaxT,0)} mm</span>; provided ${f(s,0)} mm`],
+      "Stirrups for torsion must be closed, with 135° hooks (25.7.1.6).");
+    S("Longitudinal reinforcement for torsion", "22.7.6.1, 9.6.4.3, 9.7.5",
+      [`A<sub>l</sub> = (A<sub>t</sub>/s) p<sub>h</sub> (f<sub>yt</sub>/f<sub>y</sub>) cot²θ = ${f(At_s,4)}×${f(ph,0)}×(${f(fytE,0)}/${f(fy,0)}) = ${f(AlCalc,0)} mm²`,
+       `A<sub>l,min</sub> = 0.42√f'c A<sub>cp</sub>/f<sub>y</sub> − max(A<sub>t</sub>/s, 0.175b<sub>w</sub>/f<sub>yt</sub>) p<sub>h</sub> f<sub>yt</sub>/f<sub>y</sub> = ${f(AlMin,0)} mm²`,
+       `A<sub>l</sub> = max(${f(AlCalc,0)}, ${f(AlMin,0)}) = <span class="r">${f(Al,0)} mm²</span>, shared around the perimeter in proportion to its sides:`,
+       `Tension face and compression face: A<sub>l</sub>x<sub>1</sub>/p<sub>h</sub> = ${f(AlTB,0)} mm² each; each side face: A<sub>l</sub>y<sub>1</sub>/p<sub>h</sub> = ${f(AlSide,0)} mm²`,
+       `Tension face: A<sub>s,flexure</sub> + A<sub>l</sub> share = ${f(AsFlexNeed,0)} + ${f(AlTB,0)} = <span class="r">${f(AsFlexNeed+AlTB,0)} mm²</span>; provided ${f(AsProv,0)} mm²`,
+       `Compression face: ${f(AlTB,0)} mm² needed; hanger bars provide ${f(AsHang,0)} mm²`,
+       `Each side face: ${f(AlSide,0)} mm² needed; side bars provide ${f(AsSide,0)} mm²`,
+       `Largest spacing of longitudinal bars around the perimeter = ${f(perimMax,0)} mm (limit 300 mm); smallest bar Ø${f(dbLong,0)} (limit max(0.042s, 10) = ${f(dbMinT,1)} mm)`],
+      "The compression-face share may be reduced by M<sub>u</sub>/(0.9 d f<sub>y</sub>) per 22.7.6.2; that reduction is not taken here.");
+    tCheck = {vSec, vLim, perLegDem, perLegProv, combMin, combProv, sMaxT, AsFlexNeed, perimMax, dbMinT, dbLong};
+    C("Torsion","Cross-section limit (shear + torsion)","22.7.7.1",`≤ ${f(vLim,3)} MPa`,`${f(vSec,3)} MPa`, vSec <= vLim);
+    C("Torsion","Closed stirrups: shear + torsion per leg","22.7.6.1",`${isFinite(perLegDem)?f(perLegDem,4):"–"} mm²/mm`,`${f(perLegProv,4)} mm²/mm`, perLegDem <= perLegProv);
+    C("Torsion","Minimum transverse (A<sub>v</sub> + 2A<sub>t</sub>)/s","9.6.4.2",`≥ ${f(combMin,4)} mm²/mm`,`${f(combProv,4)} mm²/mm`, combProv >= combMin);
+    C("Torsion","Stirrup spacing for torsion","9.7.6.3.3",`≤ ${f(sMaxT,0)} mm`,`${f(s,0)} mm`, s <= sMaxT);
+    C("Torsion","Tension face: flexure + torsion steel","22.7.6.1",`${f(AsFlexNeed+AlTB,0)} mm²`,`${f(AsProv,0)} mm²`, AsProv >= AsFlexNeed + AlTB);
+    C("Torsion","Compression face torsion steel","22.7.6.1",`${f(AlTB,0)} mm²`,`${f(AsHang,0)} mm²`, AsHang >= AlTB);
+    C("Torsion","Side face torsion steel (each face)","22.7.6.1",`${f(AlSide,0)} mm²`,`${f(AsSide,0)} mm²`, AsSide >= AlSide);
+    C("Torsion","Longitudinal bar spacing around perimeter","9.7.5.1",`≤ 300 mm`,`${f(perimMax,0)} mm`, perimMax <= 300);
+    C("Torsion","Longitudinal bar diameter","9.7.5.2",`≥ ${f(dbMinT,1)} mm`,`Ø${f(dbLong,0)}`, dbLong >= dbMinT);
+  } else {
+    C("Torsion","Torsion may be neglected (T<sub>u</sub> &lt; φT<sub>th</sub>)","22.7.1.1",`T<sub>u</sub> = ${f(TuD,2)} kN·m`,`φT<sub>th</sub> = ${f(phiT*Tth,2)} kN·m`, true);
+  }
+
+  // ================= E. Detailing =================
+  P("E. Detailing");
+  const inner = b - 2*cov - 2*ds;
+  const sClear = n>1 ? (inner - n*db)/(n-1) : inner - db;
+  const sMinClear = Math.max(25, db, 4/3*agg);
+  const sCC = n>1 ? (inner - db)/(n-1) : 0;
+  const fsService = 2/3*fy, cc = cov + ds;
+  const sMaxCrack = Math.min(380*(280/fsService) - 2.5*cc, 300*(280/fsService));
+  S("Bar spacing", "25.2.1, 24.3.2",
+    [`Clear width inside stirrups = b − 2·cover − 2d<sub>s</sub> = ${f(b,0)} − 2×${f(cov,0)} − 2×${f(ds,0)} = ${f(inner,1)} mm`,
+     n>1 ? `Clear spacing = (${f(inner,1)} − ${n}×${f(db,0)})/(${n} − 1) = <span class="r">${f(sClear,1)} mm</span>` : `Single bar: clear space each side = ${f(sClear/2,1)} mm`,
+     `Minimum clear spacing = max(25, d<sub>b</sub>, 4/3 d<sub>agg</sub>) = max(25, ${f(db,0)}, ${f(4/3*agg,1)}) = <span class="r">${f(sMinClear,1)} mm</span>`,
+     n>1 ? `Centre-to-centre spacing = (${f(inner,1)} − ${f(db,0)})/(${n} − 1) = <span class="r">${f(sCC,1)} mm</span>` : ``,
+     `f<sub>s</sub> = 2/3 f<sub>y</sub> = ${f(fsService,0)} MPa; c<sub>c</sub> = cover + d<sub>s</sub> = ${f(cc,0)} mm`,
+     `s<sub>max</sub> = min[380(280/f<sub>s</sub>) − 2.5c<sub>c</sub>, 300(280/f<sub>s</sub>)] = min[${f(380*(280/fsService) - 2.5*cc,1)}, ${f(300*(280/fsService),1)}] = <span class="r">${f(sMaxCrack,1)} mm</span>`]);
+
+  const tensionTop = support === "cant";
+  const concBelow = h - cov - ds - db;
+  const psiT = (tensionTop && concBelow > 300) ? 1.3 : 1.0, psiE = 1.0;
+  const psiG = modern ? (fy <= 420 ? 1.0 : (fy <= 550 ? 1.15 : 1.3)) : 1.0;
+  const condMet = (sClear >= db && covBar >= db && (avOK || !AvminNeeded) && legs > 0) || (sClear >= 2*db && covBar >= db);
+  const small = db < 22;
+  const den = small ? (condMet ? 2.1 : 1.4) : (condMet ? 1.7 : 1.1);
+  const ldCalc = fy*Math.min(psiT*psiE,1.7)*psiG/(den*lam*sqfc)*db;
+  const ld = Math.max(ldCalc, 300);
+  const ldLines = [
+    `Clear spacing ${f(sClear,1)} mm, clear cover ${f(covBar,0)} mm, d<sub>b</sub> = ${f(db,0)} mm  →  ${condMet ? "spacing and cover conditions of Table 25.4.2.3 met" : "\"other cases\" row applies"}`,
+    `ψ<sub>t</sub> = ${psiT} (${tensionTop ? "top bars" : "bottom bars"}), ψ<sub>e</sub> = 1.0 (uncoated)${modern ? `, ψ<sub>g</sub> = ${psiG}` : ""}, λ = 1.0`,
+    `ℓ<sub>d</sub> = f<sub>y</sub>ψ<sub>t</sub>ψ<sub>e</sub>${modern?"ψ<sub>g</sub>":""}/(${den}λ√f'c) × d<sub>b</sub> = ${f(fy,0)}×${psiT}×${psiE}${modern?"×"+psiG:""}/(${den}×1.0×${f(sqfc,2)}) × ${f(db,0)} = ${f(ldCalc,0)} mm`,
+    `ℓ<sub>d</sub> = max(${f(ldCalc,0)}, 300) = <span class="r">${f(ld,0)} mm</span>`];
+  let anchorOK = null, anchorAvail = NaN;
+  if (support === "ss"){ anchorAvail = L*1000/2; anchorOK = anchorAvail >= ld;
+    ldLines.push(`Simply supported: length from midspan to support face ≈ ℓ/2 = ${f(anchorAvail,0)} mm, compared with ℓ<sub>d</sub>`); }
+  S("Development length of main bars", "25.4.2.3", ldLines,
+    ed==="25" ? "318-25 revised the development length provisions. This uses the 318-19 form; confirm against the 2025 text." : "");
+
+  C("Detailing","Minimum clear spacing of bars","25.2.1",`≥ ${f(sMinClear,1)} mm`,`${f(sClear,1)} mm`, sClear >= sMinClear);
+  if (n>1) C("Detailing","Maximum spacing for crack control","24.3.2",`≤ ${f(sMaxCrack,1)} mm`,`${f(sCC,1)} mm c/c`, sCC <= sMaxCrack);
+  C("Detailing","Design d achievable with detailing","Detailing",`d used = ${f(d,1)} mm`,`d<sub>detail</sub> = ${f(dDetail,1)} mm`, d <= dDetail + 0.5);
+  if (anchorOK !== null) C("Detailing","Development length to support","25.4.2.3",`ℓ<sub>d</sub> = ${f(ld,0)} mm`,`≈ ${f(anchorAvail,0)} mm available`, anchorOK);
+  else C("Detailing","Development length","25.4.2.3",`ℓ<sub>d</sub> = ${f(ld,0)} mm`, support==="cant" ? "Extend into back span ≥ ℓ<sub>d</sub>" : "Provide ≥ ℓ<sub>d</sub> past critical sections", true, true);
+  if (h > 900) C("Detailing","Skin reinforcement needed (h > 900 mm)","9.7.2.3",`h = ${f(h,0)} mm`,"Provide per 9.7.2.3", false, true);
+
+  // ================= required-vs-provided hints =================
+  const ok_ = b => b ? "ok" : "bad";
+  const Abar = Math.PI*db*db/4;
+  const nFit = Math.max(1, Math.floor((inner + sMinClear)/(db + sMinClear)));
+  const mainNeed = (isFinite(AsDesign) ? AsDesign : NaN) + (torsionReq ? AlTB : 0);
+  const nMainReq = isFinite(mainNeed) ? Math.ceil(mainNeed/Abar - 1e-9) : NaN;
+  const hints = {};
+  hints.main = isFinite(mainNeed)
+    ? {cls: ok_(AsProv >= mainNeed && n <= nFit), html:
+       `Need <b>${f(mainNeed,0)} mm²</b> (flexure ${f(AsDesign,0)}${torsionReq ? ` + torsion ${f(AlTB,0)}` : ""}), at least <b>${nMainReq}-Ø${f(db,0)}</b>. Providing ${n}-Ø${f(db,0)} = ${f(AsProv,0)} mm².` +
+       (nMainReq > nFit ? ` Only ${nFit} Ø${f(db,0)} bars fit in one layer; use a larger bar or a wider beam.` : (n > nFit ? ` Only ${nFit} bars fit in one layer.` : ""))}
+    : {cls:"bad", html:"The section is too small for this moment as a singly reinforced beam. Increase b or h."};
+
+  // stirrups: largest spacing that satisfies every shear and torsion rule for the chosen diameter and legs
+  if (legs > 0){
+    const rate = VsReq*1e3/(fytE*d)/legs + (torsionReq ? At_s : 0);
+    const sStr = rate > 0 ? Ab/rate : Infinity;
+    const needMin = AvminNeeded || torsionReq;
+    const sMin = needMin ? legs*Ab*fytE/(AvminCoef*b) : Infinity;
+    const Vth = 0.33*sqfc*b*d;
+    const sTh = legs*Ab*fytE*d/Vth;
+    const sTor = torsionReq ? Math.min(ph/8, 300) : Infinity;
+    const base = [[sStr, torsionReq ? "shear + torsion strength per leg" : "shear strength"], [sMin, "minimum transverse steel"], [sTor, "p<sub>h</sub>/8 or 300 mm for torsion (9.7.6.3.3)"]];
+    const govOf = extra => [...base, extra].reduce((m,x) => x[0] < m[0] ? x : m);
+    const gHi = govOf([Math.min(d/2, 600), "d/2 or 600 mm (9.7.6.2.2)"]);
+    const gLo = govOf([Math.min(d/4, 300), "d/4 or 300 mm (9.7.6.2.2)"]);
+    const lo = Math.floor(gLo[0] + 1e-9), hi = Math.floor(gHi[0] + 1e-9), th = Math.ceil(sTh - 1e-9);
+    let rangeTxt;
+    if (hi >= th && hi > lo){
+      rangeTxt = lo >= th - 1
+        ? `spacing up to <b>${hi} mm</b> works, governed by ${gHi[1]}.`
+        : `spacing of <b>${lo} mm or less</b> works (governed by ${gLo[1]}), or <b>${th} to ${hi} mm</b> (governed by ${gHi[1]}). Between ${lo} and ${th} mm, V<sub>s</sub> exceeds 0.33√f'c b<sub>w</sub>d and the limit drops to d/4.`;
+    } else {
+      rangeTxt = `spacing up to <b>${lo} mm</b> works, governed by ${gLo[1]}${gLo[1].startsWith("d/4") ? ", because V<sub>s</sub> exceeds 0.33√f'c b<sub>w</sub>d" : ""}.`;
+    }
+    const stirChecks = checks.filter(k => !k.info && /Shear strength|Minimum shear|Stirrup|Closed stirrups|Minimum transverse/.test(k.name));
+    const okS = stirChecks.every(k => k.ok);
+    hints.stir = {cls: ok_(okS), html:
+      `Ø${f(ds,0)} with ${legs} legs: ${rangeTxt} Providing ${f(s,0)} mm.` +
+      (torsionReq ? ` Torsion needs A<sub>t</sub>/s = ${f(At_s,4)} mm²/mm in each outer leg; inner legs help shear only.` : "") +
+      (legs > 1 && legSpacing > sMaxTrans ? ` Leg spacing across the width is ${f(legSpacing,0)} mm, more than ${f(sMaxTrans,0)} mm: add legs.` : "") +
+      (Math.max(lo, hi >= th ? hi : 0) < 75 ? ` That spacing is tight; a larger stirrup diameter would help.` : "")};
+  } else {
+    const needAny = AvminNeeded || torsionReq || VsReq > 0;
+    hints.stir = {cls: needAny ? "bad" : "ok", html: needAny ? "Stirrups are required. Enter at least 2 legs." : "No stirrups needed by calculation."};
+  }
+
+  if (torsionReq){
+    hints.hang = {cls: ok_(AsHang >= AlTB), html: `Torsion needs <b>${f(AlTB,0)} mm²</b> on the compression face. Providing ${nt}-Ø${f(dbt,0)} = ${f(AsHang,0)} mm².`};
+    const nSpace = Math.max(Math.ceil(y1/300) - 1, 0);
+    const dbMin = Math.max(0.042*s, 10);
+    const nArea = Math.ceil(AlSide/(Math.PI*dbs*dbs/4) - 1e-9);
+    const nNeed = Math.max(nSpace, nArea);
+    hints.side = {cls: ok_(AsSide >= AlSide && nside >= nSpace && (nside === 0 || dbs >= dbMin)), html:
+      `Torsion needs <b>${f(AlSide,0)} mm²</b> per face and at least ${nSpace} bar${nSpace===1?"":"s"} per face to keep bars within 300 mm around the perimeter; with Ø${f(dbs,0)} that is <b>${nNeed} per face</b>. Bar size at least Ø${f(dbMin,1)}. Providing ${nside > 0 ? `${nside}-Ø${f(dbs,0)} = ${f(AsSide,0)} mm²` : "none"}.`};
+  } else {
+    hints.hang = {cls:"na", html:`Nominal bars only: T<sub>u</sub> = ${f(TuD,2)} kN·m is below φT<sub>th</sub> = ${f(phiT*Tth,2)} kN·m, so no torsion steel is needed.`};
+    hints.side = {cls: h > 900 ? "bad" : "na", html: h > 900 ? "Torsion steel not needed, but h &gt; 900 mm, so skin reinforcement is required on the side faces (9.7.2.3)." : "Not needed: torsion is below the threshold."};
+  }
+
+  // ================= outcome =================
+  const graded = checks.filter(k=>!k.info);
+  const allOk = graded.every(k=>k.ok);
+  const failed = graded.filter(k=>!k.ok);
+  const st = ok => ok ? "PASS" : "FAIL";
+  const gp = g => graded.filter(k=>k.group===g);
+  const groupOk = g => gp(g).every(k=>k.ok);
+
+  const inRows = [
+    ["Code edition", edName, ""],
+    ["Support condition / span", `${SUP_NAME[support]}, ${f(L,2)}`, "m"],
+    ["Factored moment, M<sub>u</sub>", f(Mu,2), "kN·m"],
+    ["Factored shear, V<sub>u</sub>", f(Vu,2), "kN"],
+    ["Factored torque, T<sub>u</sub>", `${f(Tu,2)} (${ttype==="comp"?"compatibility":"equilibrium"})`, "kN·m"],
+    ["f'<sub>c</sub> / f<sub>y</sub> / f<sub>yt</sub>", `${f(fc,1)} / ${f(fy,0)} / ${f(fyt,0)}`, "MPa"],
+    ["E<sub>s</sub> / ε<sub>cu</sub>", `${f(Es,0)} / ${f(ecu,4)}`, "MPa / –"],
+    ["b<sub>w</sub> × h", `${f(b,0)} × ${f(h,0)}`, "mm"],
+    ["Effective depth used, d", f(d,1), "mm"],
+    ["Main bars", `${n}-Ø${f(db,0)}`, ""],
+    ["Hanger bars", `${nt}-Ø${f(dbt,0)}`, ""],
+    ["Side bars (each face)", nside > 0 ? `${nside}-Ø${f(dbs,0)}` : "None", ""],
+    ["Stirrups", `Ø${f(ds,0)}, ${legs} legs @ ${f(s,0)}`, "mm"],
+    ["Exposure / clear cover", `${EXP_NAME[exposure]} / ${f(cov,0)}`, "mm"],
+    ["Max aggregate size", f(agg,0), "mm"]];
+
+  const sumRows = [
+    {g:"Design basis"},
+    ["Design code", edName, `${SUP_NAME[support]} beam, span ${f(L,2)} m`, ""],
+    ["Section", `${f(b,0)} × ${f(h,0)} mm, d = ${f(d,1)} mm`, v.dmode==="detail" ? "d from cover, stirrup and bar size" : `d entered; detailing gives ${f(dDetail,1)} mm`, ""],
+    ["Materials", `f'c = ${f(fc,0)}, f<sub>y</sub> = ${f(fy,0)}, f<sub>yt</sub> = ${f(fyt,0)} MPa`, `β₁ = ${f(beta1,3)}`, groupOk("Materials and cover") ? "PASS" : "FAIL"],
+    ["Minimum depth", `h<sub>min</sub> = ${f(hmin,0)} mm`, h>=hmin ? "Deflection need not be calculated" : "Calculate deflections per 24.2", st(h>=hmin)],
+    {g:"Flexure"},
+    ["Factored moment, M<sub>u</sub>", `${f(Mu,1)} kN·m`, "", ""],
+    ["Required steel, A<sub>s,req</sub>", isFinite(AsReq) ? `${f(AsReq,0)} mm²` : "No solution", isFinite(AsReq) ? `A<sub>s,min</sub> = ${f(Asmin,0)} mm²` : "Section too small for a singly reinforced design", isFinite(AsReq) ? "" : "FAIL"],
+    ["Provided steel", `${n}-Ø${f(db,0)} = ${f(AsProv,0)} mm²`, isFinite(AsDesign) ? `${f(AsProv/AsDesign*100,0)}% of governing requirement` : "", st(isFinite(AsDesign) && AsProv>=AsDesign && AsProv>=Asmin)],
+    ["Neutral axis, c / stress block, a", `${f(c,1)} / ${f(a,1)} mm`, `c/d = ${f(c/d,3)}`, ""],
+    ["Tensile strain, ε<sub>t</sub>", f4(et), `${zone}, φ = ${f(phi,3)}`, modern ? st(et>=etc) : st(et>=0.004)],
+    ["Design strength, φM<sub>n</sub>", `${f(phiMn,1)} kN·m`, `Utilisation ${f(Mu/phiMn*100,1)}%`, st(phiMn>=Mu)],
+    {g:"Shear"},
+    ["Factored shear, V<sub>u</sub>", `${f(Vu,1)} kN`, "", ""],
+    ["Concrete, V<sub>c</sub> / stirrups, V<sub>s</sub>", `${f(Vc,1)} / ${f(Vs,1)} kN`, `V<sub>s,req</sub> = ${f(VsReq,1)} kN`, ""],
+    ["Design strength, φV<sub>n</sub>", `${f(phiVn,1)} kN`, `Utilisation ${f(Vu/phiVn*100,1)}%`, st(phiVn>=Vu && Vu <= phiV*(Vc+VsLimit))],
+    ["Stirrups", `Ø${f(ds,0)}, ${legs} legs @ ${f(s,0)} mm`, `A<sub>v</sub> = ${f(Av,1)} mm²; A<sub>v,min</sub> = ${f(Avmin,1)} mm²; s<sub>max</sub> = ${f(sMaxLong,0)} mm`, st(gp("Shear").filter(k=>/Minimum shear|spacing/.test(k.name)).every(k=>k.ok))],
+    {g:"Torsion"},
+    ["Factored torque, T<sub>u</sub>", `${f(TuD,2)} kN·m`, tReduced ? `Reduced from ${f(Tu,2)} kN·m (compatibility)` : (ttype==="comp" ? "Compatibility torsion" : "Equilibrium torsion"), ""],
+    ["Threshold, φT<sub>th</sub>", `${f(phiT*Tth,2)} kN·m`, torsionReq ? "Torsion design required" : "Torsion may be neglected", torsionReq ? "" : "PASS"],
+    ...(torsionReq ? [
+      ["Transverse, A<sub>t</sub>/s", `${f(At_s,4)} mm²/mm per leg`, `Per-leg demand with shear ${f(tCheck.perLegDem,4)}, provided ${f(tCheck.perLegProv,4)} mm²/mm`, st(gp("Torsion").filter(k=>/stirrup|transverse/i.test(k.name)).every(k=>k.ok))],
+      ["Longitudinal, A<sub>l</sub>", `${f(Al,0)} mm²`, `${f(AlTB,0)} mm² top and bottom, ${f(AlSide,0)} mm² each side`, st(gp("Torsion").filter(k=>/face|Longitudinal/.test(k.name)).every(k=>k.ok))],
+      ["Section limit", `${f(tCheck.vSec,3)} MPa`, `Limit ${f(tCheck.vLim,3)} MPa`, st(tCheck.vSec <= tCheck.vLim)]] : []),
+    {g:"Detailing"},
+    ["Bar spacing", `${f(sClear,1)} mm clear`, `Minimum ${f(sMinClear,1)} mm` + (n>1 ? `; ${f(sCC,1)} mm c/c, max ${f(sMaxCrack,1)} mm` : ""), st(sClear>=sMinClear && (n<=1 || sCC<=sMaxCrack))],
+    ["Development length, ℓ<sub>d</sub>", `${f(ld,0)} mm`, anchorOK===null ? "Provide past critical sections" : `≈ ${f(anchorAvail,0)} mm available to support`, anchorOK===null ? "NOTE" : st(anchorOK)]
+  ];
+  if (v.dmode==="input" && d > dDetail + 0.5){
+    const a2 = AsProv*fy/(0.85*fc*b), c2 = a2/beta1, et2 = ecu*(dDetail-c2)/c2;
+    const phi2 = et2>=etc ? 0.9 : (et2<=ety ? 0.65 : 0.65+0.25*(et2-ety)/(etc-ety));
+    const pm2 = phi2*AsProv*Math.min(fy,Es*et2)*(dDetail-a2/2)/1e6;
+    sumRows.push(["φM<sub>n</sub> at detailed depth", `${f(pm2,1)} kN·m`, `With d = ${f(dDetail,1)} mm; ${pm2>=Mu?"still meets":"falls below"} M<sub>u</sub>`, st(pm2>=Mu)]);
+  }
+  sumRows.push({g:"Result"});
+  sumRows.push(["Checks satisfied", `${graded.length-failed.length} of ${graded.length}`, failed.length ? "See items to resolve" : "", ""]);
+  const outcomeRow = ["Overall outcome", allOk ? "Design adequate" : "Design not adequate", allOk ? "All checks satisfied" : `${failed.length} check${failed.length>1?"s":""} not satisfied`, st(allOk)];
+  const actions = failed.map(k => [k.name, k.ref, k.demand, k.capacity, advice(k.name)]);
+
+  const nStir = Math.floor(L*1000/s) + 1;
+  const schedule = [
+    ["a", "Main tension bars", tensionTop ? "Top face" : "Bottom face", n, db, "–", `${f(AsProv,0)} mm²`],
+    ["b", "Hanger bars (nominal)", tensionTop ? "Bottom face" : "Top face", nt, dbt, "–", "Not counted in strength"],
+    ["c", `Closed stirrups, ${legs} legs`, "Full span", `≈ ${nStir}`, ds, `${f(s,0)} c/c`, `A<sub>v</sub> = ${f(Av,1)} mm²`]
+  ];
+  if (nside > 0) schedule.push(["d", "Side bars (torsion)", "Both side faces", 2*nside, dbs, "–", `${nside} per face, ${f(AsSide,0)} mm² per face`]);
+
+  M = {v, edName, inRows, steps, checks, sumRows, outcomeRow, actions, allOk, failed, schedule,
+       zone, phi, phiMn, Mu, Vu, phiVn, AsProv, ld, TuD, torsionReq, hints,
+       geo:{b,h,d,c,a,n,db,nt,dbt,ds,legs,s,cov,et,ecu,etc,L,support,tensionTop,ld,zone,ok:et>=etc,nside,dbs}};
+  stale = false;
+  render();
+  toast("Calculated.");
+}
+
+function advice(name){
+  const s = strip(name);
+  if (s.startsWith("Concrete strength")) return "Use f'c of at least 17 MPa.";
+  if (s.startsWith("Main bar fy")) return "Use reinforcement with fy no more than 550 MPa.";
+  if (s.startsWith("Cover")) return "Increase the clear cover.";
+  if (s.startsWith("Minimum depth")) return "Deepen the beam, or calculate deflections per 24.2 and check limits of Table 24.2.2.";
+  if (s.startsWith("Section size adequate")) return "Increase b or h, or design as doubly reinforced.";
+  if (s.startsWith("Provided steel ≥ required")) return "Add bars or use a larger bar size.";
+  if (s.startsWith("Provided steel ≥ minimum")) return "Increase steel to at least As,min.";
+  if (s.startsWith("Steel yields")) return "Over-reinforced. Reduce steel and increase depth, or add compression steel.";
+  if (s.startsWith("Tension-controlled") || s.startsWith("Beam strain")) return "Reduce steel, deepen the section or add compression steel.";
+  if (s.startsWith("Flexural strength")) return "Add steel (watch the strain limit) or increase depth.";
+  if (s.startsWith("Section size for shear")) return "Increase b or d; stirrups alone cannot fix this.";
+  if (s.startsWith("Shear strength")) return "Reduce stirrup spacing, add legs or use a larger stirrup.";
+  if (s.startsWith("Minimum shear")) return "Reduce spacing or increase stirrup size.";
+  if (s.startsWith("Stirrup spacing")) return "Reduce stirrup spacing to the limit.";
+  if (s.startsWith("Stirrup leg")) return "Add stirrup legs.";
+  if (s.startsWith("Cross-section limit")) return "Increase b or h; reinforcement cannot fix this.";
+  if (s.startsWith("Closed stirrups")) return "Use a larger stirrup or closer spacing.";
+  if (s.startsWith("Minimum transverse")) return "Reduce stirrup spacing or increase stirrup size.";
+  if (s.startsWith("Stirrup spacing for torsion")) return "Reduce spacing to ph/8 or 300 mm.";
+  if (s.startsWith("Tension face")) return "Add main bars to carry flexure plus the torsion share.";
+  if (s.startsWith("Compression face")) return "Increase hanger bars to carry the torsion share.";
+  if (s.startsWith("Side face")) return "Add side bars on each vertical face.";
+  if (s.startsWith("Longitudinal bar spacing")) return "Add side bars so bars around the perimeter are no more than 300 mm apart.";
+  if (s.startsWith("Longitudinal bar diameter")) return "Use larger longitudinal bars or closer stirrups.";
+  if (s.startsWith("Minimum clear")) return "Use fewer, larger bars, two layers, or a wider beam.";
+  if (s.startsWith("Maximum spacing")) return "Use more, smaller bars.";
+  if (s.startsWith("Design d")) return "Design with d from detailing.";
+  if (s.startsWith("Development length")) return "Use smaller bars or hooks at the support.";
+  return "";
+}
+
+const badge = s => s ? `<span class="badge ${s==="PASS"?"pass":s==="FAIL"?"fail":"info"}">${s}</span>` : "";
+const statusOf = k => k.info ? "NOTE" : (k.ok ? "PASS" : "FAIL");
+
+function render(){
+  const {v, edName, inRows, steps, checks, sumRows, outcomeRow, actions, allOk, failed} = M;
+  $("empty").hidden = true; $("results").hidden = false; $("stale").hidden = true;
+  $("verdict").className = "verdict " + (allOk ? "pass" : "fail");
+  $("verdict").innerHTML = `<div class="big">${allOk ? "PASS" : "FAIL"}</div>
+    <div class="txt"><b>${esc(v.mark || "Beam")}: ${f(v.b,0)} × ${f(v.h,0)} mm, ${v.n}-Ø${f(v.db,0)} main bars, Ø${f(v.ds,0)} ${v.legs}-leg stirrups @ ${f(v.s,0)} mm</b> (${edName}).
+    φM<sub>n</sub> = ${f(M.phiMn,1)} kN·m for M<sub>u</sub> = ${f(M.Mu,1)} kN·m; φV<sub>n</sub> = ${f(M.phiVn,1)} kN for V<sub>u</sub> = ${f(M.Vu,1)} kN; T<sub>u</sub> = ${f(M.TuD,2)} kN·m (${M.torsionReq ? "torsion designed" : "below threshold"}).
+    ${allOk ? "All checks satisfied." : failed.length + " check" + (failed.length>1?"s":"") + " not satisfied: " + failed.map(k=>strip(k.name)).join("; ") + "."}</div>`;
+
+  let lastG = "", i = 0;
+  $("checks").innerHTML = `<tr><th>#</th><th>Check</th><th>Clause</th><th>Required</th><th>Provided / actual</th><th>Status</th></tr>` +
+    checks.map(k => { let r = "";
+      if (k.group !== lastG){ lastG = k.group; r += `<tr class="grp"><td colspan="6">${k.group}</td></tr>`; }
+      return r + `<tr><td>${++i}</td><td>${k.name}</td><td>${k.ref}</td><td class="num">${k.demand}</td><td class="num">${k.capacity}</td><td>${badge(statusOf(k))}</td></tr>`; }).join("");
+
+  $("inputs").innerHTML = `<tr><th>Parameter</th><th>Value</th><th>Unit</th></tr>` + inRows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td>${r[2]}</td></tr>`).join("");
+
+  let lastP = "";
+  $("steps").innerHTML = steps.map((s,i)=>{ let h = "";
+    if (s.part !== lastP){ lastP = s.part; h += `<div class="part">${s.part}</div>`; }
+    return h + `<div class="step"><div class="step-h"><b>Step ${i+1}. ${s.title}</b><span class="ref">${edName} ${s.ref}</span></div>
+     <div class="calc">${s.lines.join("<br>")}</div>${s.note?`<p>${s.note}</p>`:""}</div>`; }).join("");
+
+  drawFigs(M.geo);
+  document.querySelector("aside").classList.remove("hints-stale");
+  [["main","hint_main"],["stir","hint_stir"],["hang","hint_hang"],["side","hint_side"]].forEach(([k,id]) => {
+    const h = M.hints[k], el = $(id); el.hidden = false; el.className = "hint " + h.cls; el.innerHTML = h.html; });
+
+  let html = `<div class="tscroll"><table><tr><th>Item</th><th>Result</th><th>Remark</th><th>Status</th></tr>` +
+    sumRows.map(r => r.g ? `<tr class="grp"><td colspan="4">${r.g}</td></tr>` : `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td>${r[2]}</td><td>${badge(r[3])}</td></tr>`).join("") +
+    `<tr class="total"><td>${outcomeRow[0]}</td><td>${outcomeRow[1]}</td><td>${outcomeRow[2]}</td><td>${badge(outcomeRow[3])}</td></tr></table></div>`;
+  if (actions.length){
+    html += `<h4>Items to resolve</h4><div class="tscroll"><table><tr><th>Check</th><th>Clause</th><th>Required</th><th>Actual</th><th>Action</th></tr>` +
+      actions.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td><td>${r[4]}</td></tr>`).join("") + `</table></div>`;
+  }
+  html += `<p class="note">${SCOPE_NOTE}</p>`;
+  $("summary").innerHTML = html;
+
+  const det = detailSvgs(M);
+  $("detail").innerHTML = det.sec + `<div class="figcap">Cross-section at maximum moment (to scale)</div>` + det.elev + `<div class="figcap">Elevation (length to scale, depth exaggerated)</div>`;
+  $("schedule").innerHTML = `<tr><th>Mark</th><th>Description</th><th>Location</th><th>No.</th><th>Dia (mm)</th><th>Spacing (mm)</th><th>Remark</th></tr>` +
+    M.schedule.map(r=>`<tr>${r.map((c,j)=>`<td${j>=3&&j<=5?' class="num"':''}>${c}</td>`).join("")}</tr>`).join("");
+
+  updateButtons();
+}
+
+function drawFigs(p){
+  const {b,h,d,c,a,n,db,ds,cov,et,ecu,zone,ok} = p;
+  const H = 300, sc = H/h, W = b*sc, ox = 30, oy = 20;
+  const yb = oy + d*sc, yNA = oy + Math.min(c,h)*sc, aH = Math.min(a*sc,H);
+  let bars = "";
+  const inner = b - 2*cov - 2*ds;
+  for (let i=0;i<n;i++){
+    const x = n>1 ? cov+ds+db/2 + i*(inner-db)/(n-1) : b/2;
+    bars += `<circle cx="${ox+x*sc}" cy="${yb}" r="${Math.max(db/2*sc,2.5)}" fill="#1d2329"/>`;
+  }
+  const sec = `<svg viewBox="0 0 ${W+90} ${H+50}" width="${W+90}" height="${H+50}" font-family="IBM Plex Sans" font-size="11">
+    <rect x="${ox}" y="${oy}" width="${W}" height="${H}" fill="#eceae3" stroke="#1d2329" stroke-width="1.2"/>
+    <rect x="${ox}" y="${oy}" width="${W}" height="${aH}" fill="#1f4e79" opacity=".18"/>
+    ${bars}
+    <line x1="${ox-8}" y1="${yNA}" x2="${ox+W+8}" y2="${yNA}" stroke="#b3261e" stroke-dasharray="5 3" stroke-width="1.3"/>
+    <text x="${ox+W+10}" y="${yNA+4}" fill="#b3261e">N.A.</text>
+    <text x="${ox+W+10}" y="${oy+aH/2+4}" fill="#1f4e79">a</text>
+    <text x="${ox-6}" y="${oy-6}" fill="#5d6670">c = ${c.toFixed(1)} mm</text>
+  </svg>`;
+  const cx = 70, wt = 30, wb = Math.max(Math.min(wt*(d-c)/c, 110), 0);
+  const strain = `<svg viewBox="0 0 230 ${H+50}" width="230" height="${H+50}" font-family="IBM Plex Sans" font-size="11">
+    <line x1="${cx}" y1="${oy}" x2="${cx}" y2="${oy+H}" stroke="#1d2329"/>
+    <polygon points="${cx},${oy} ${cx-wt},${oy} ${cx},${yNA}" fill="#1f4e79" opacity=".2" stroke="#1f4e79"/>
+    <polygon points="${cx},${yNA} ${cx+wb},${yb} ${cx},${yb}" fill="#1f4e79" opacity=".2" stroke="#1f4e79"/>
+    <line x1="${cx-45}" y1="${yNA}" x2="${cx+120}" y2="${yNA}" stroke="#b3261e" stroke-dasharray="5 3"/>
+    <text x="${cx-wt-4}" y="${oy-6}">ε<tspan font-size="8" dy="3">cu</tspan><tspan dy="-3"> = ${ecu}</tspan></text>
+    <text x="${cx+4}" y="${yb+16}">ε<tspan font-size="8" dy="3">t</tspan><tspan dy="-3"> = ${et.toFixed(5)}</tspan></text>
+    <text x="${cx+30}" y="${H+oy+22}" text-anchor="middle" fill="${ok?"#1e7a46":"#b3261e"}">${zone}</text>
+  </svg>`;
+  $("figs").innerHTML = sec + strain;
+}
+
+// ---------- reinforcement detail drawings ----------
+function detailSvgs(M){
+  const g = M.geo, {b,h,d,n,db,nt,dbt,ds,legs,s,cov,L,support,tensionTop,nside,dbs} = g;
+  const FONT = 'font-family="Helvetica, Arial, sans-serif"';
+  const sc = Math.min(320/h, 260/b), W = b*sc, H = h*sc, ox = 90, oy = 30;
+  const VW = ox + W + 340, VH = oy + H + 70;
+  const inner = b - 2*cov - 2*ds;
+  const yT = tensionTop ? oy + (cov+ds+db/2)*sc : oy + (h-cov-ds-db/2)*sc;
+  const yH = tensionTop ? oy + (h-cov-ds-dbt/2)*sc : oy + (cov+ds+dbt/2)*sc;
+  const yComp = tensionTop ? oy + H : oy;
+  const barX = (i, cnt, dia) => cnt>1 ? cov+ds+dia/2 + i*(inner-dia)/(cnt-1) : b/2;
+  let main = "", hang = "", legsSvg = "";
+  for (let i=0;i<n;i++) main += `<circle cx="${ox+barX(i,n,db)*sc}" cy="${yT}" r="${db/2*sc}" fill="#b3261e" stroke="#5a120e" stroke-width="0.8"/>`;
+  for (let i=0;i<nt;i++) hang += `<circle cx="${ox+barX(i,nt,dbt)*sc}" cy="${yH}" r="${dbt/2*sc}" fill="#1f4e79" stroke="#0e2740" stroke-width="0.8"/>`;
+  let side = "", ySide1 = 0;
+  for (let i=1;i<=nside;i++){ const yy = yT + (yH - yT)*i/(nside+1); if (i===1) ySide1 = yy;
+    [cov+ds+dbs/2, b-cov-ds-dbs/2].forEach(xx => side += `<circle cx="${ox+xx*sc}" cy="${yy}" r="${dbs/2*sc}" fill="#7a5a00" stroke="#3d2d00" stroke-width="0.8"/>`); }
+  const sw = Math.max(ds*sc, 1.5);
+  const sx = ox + (cov+ds/2)*sc, sy = oy + (cov+ds/2)*sc, sW = W - 2*(cov+ds/2)*sc, sH = H - 2*(cov+ds/2)*sc;
+  if (legs > 2){ for (let i=1;i<legs-1;i++){ const x = sx + i*sW/(legs-1); legsSvg += `<line x1="${x}" y1="${sy}" x2="${x}" y2="${sy+sH}" stroke="#4b5560" stroke-width="${sw}"/>`; } }
+  const dimH = (x1,x2,y,label) => `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="#1d2329" stroke-width="0.8"/>
+    <line x1="${x1}" y1="${y-5}" x2="${x1}" y2="${y+5}" stroke="#1d2329" stroke-width="0.8"/><line x1="${x2}" y1="${y-5}" x2="${x2}" y2="${y+5}" stroke="#1d2329" stroke-width="0.8"/>
+    <text x="${(x1+x2)/2}" y="${y+16}" text-anchor="middle">${label}</text>`;
+  const dimV = (x,y1,y2,label,side) => `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="#1d2329" stroke-width="0.8"/>
+    <line x1="${x-5}" y1="${y1}" x2="${x+5}" y2="${y1}" stroke="#1d2329" stroke-width="0.8"/><line x1="${x-5}" y1="${y2}" x2="${x+5}" y2="${y2}" stroke="#1d2329" stroke-width="0.8"/>
+    <text transform="translate(${x + (side<0?-8:14)},${(y1+y2)/2}) rotate(-90)" text-anchor="middle">${label}</text>`;
+  const cx0 = ox + W + 70;
+  const callout = (yFrom, xFrom, yTo, label, sub, col) => `<polyline points="${xFrom},${yFrom} ${cx0-10},${yTo} ${cx0-2},${yTo}" fill="none" stroke="${col}" stroke-width="0.9"/>
+    <circle cx="${xFrom}" cy="${yFrom}" r="2" fill="${col}"/>
+    <text x="${cx0+2}" y="${yTo+4}" font-weight="bold" fill="${col}">${label}</text><text x="${cx0+2}" y="${yTo+19}" fill="#5d6670">${sub}</text>`;
+  const lastMainX = ox + barX(n-1,n,db)*sc + db/2*sc, lastHangX = ox + barX(nt-1,nt,dbt)*sc + dbt/2*sc;
+  const yStirTxt = oy + H/2;
+  const sec = `<svg viewBox="0 0 ${VW} ${VH}" width="${VW}" height="${VH}" ${FONT} font-size="12" fill="#1d2329">
+    <defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#d3cfc2" stroke-width="1"/></pattern></defs>
+    <rect x="${ox}" y="${oy}" width="${W}" height="${H}" fill="#f1efe8"/><rect x="${ox}" y="${oy}" width="${W}" height="${H}" fill="url(#hatch)" stroke="#1d2329" stroke-width="1.5"/>
+    <rect x="${sx}" y="${sy}" width="${sW}" height="${sH}" rx="${Math.max(2*ds*sc,4)}" fill="none" stroke="#4b5560" stroke-width="${sw}"/>
+    ${legsSvg}${hang}${side}${main}
+    ${dimH(ox, ox+W, oy+H+22, `b = ${f(b,0)}`)}
+    ${dimV(ox-30, oy, oy+H, `h = ${f(h,0)}`, -1)}
+    ${dimV(ox-60, Math.min(yComp,yT), Math.max(yComp,yT), `d = ${f(d,1)}`, -1)}
+    ${callout(yT, lastMainX, tensionTop ? oy+10 : oy+H-30, `(a) ${n}-Ø${f(db,0)} main bars`, `A<tspan dy="3" font-size="9">s</tspan><tspan dy="-3"> = ${f(M.AsProv,0)} mm², ${tensionTop?"top":"bottom"} face</tspan>`, "#b3261e")}
+    ${callout(yH, lastHangX, tensionTop ? oy+H-30 : oy+10, `(b) ${nt}-Ø${f(dbt,0)} hanger bars`, "nominal, not counted in strength", "#1f4e79")}
+    ${callout(nside ? oy+H*0.38 : yStirTxt, sx+sW, nside ? oy+H*0.30 : yStirTxt-10, `(c) Ø${f(ds,0)} closed stirrups, ${legs} legs @ ${f(s,0)} c/c`, `clear cover ${f(cov,0)} mm to stirrup`, "#4b5560")}
+    ${nside ? callout(yT + (yH - yT)*Math.ceil(nside/2)/(nside+1), ox+(b-cov-ds)*sc, oy+H*0.55, `(d) ${nside}-Ø${f(dbs,0)} side bars each face`, `${2*nside} bars total, for torsion`, "#7a5a00") : ""}
+    <text x="${ox}" y="${VH-6}" fill="#5d6670" font-size="11">All dimensions in mm</text>
+  </svg>`;
+
+  // elevation
+  const EW = 820, EH = 240, ex0 = 60, ex1 = EW - 60, Lpx = ex1 - ex0, bh = 80, ey = 62;
+  const yBot = ey + bh, yTb = tensionTop ? ey + 10 : yBot - 10, yHb = tensionTop ? yBot - 10 : ey + 10;
+  let stir = "";
+  const pxPerMm = Lpx/(L*1000), step = s*pxPerMm;
+  const every = step < 4 ? Math.ceil(4/step) : 1;
+  const nS = Math.floor(L*1000/s) + 1;
+  for (let i=0;i<nS;i+=every){ const x = ex0 + 25*pxPerMm + i*step; if (x > ex1 - 2) break; stir += `<line x1="${x}" y1="${ey+4}" x2="${x}" y2="${yBot-4}" stroke="#9aa2a9" stroke-width="1"/>`; }
+  const pin = x => `<polygon points="${x},${yBot} ${x-10},${yBot+16} ${x+10},${yBot+16}" fill="none" stroke="#1d2329" stroke-width="1.2"/><line x1="${x-14}" y1="${yBot+16}" x2="${x+14}" y2="${yBot+16}" stroke="#1d2329"/>`;
+  const fixedWall = x => `<rect x="${x-14}" y="${ey-20}" width="14" height="${bh+40}" fill="url(#hatch2)" stroke="#1d2329"/>`;
+  const contMark = x => `<line x1="${x}" y1="${ey-12}" x2="${x}" y2="${yBot+12}" stroke="#1d2329" stroke-dasharray="4 3"/>${pin(x)}`;
+  let supports = "";
+  if (support==="ss") supports = pin(ex0) + pin(ex1);
+  else if (support==="one") supports = pin(ex0) + contMark(ex1);
+  else if (support==="both") supports = contMark(ex0) + contMark(ex1);
+  else supports = fixedWall(ex0);
+  const lab = (x, y, t, col) => `<rect x="${x - t.length*3.4 - 4}" y="${y-12}" width="${t.length*6.8 + 8}" height="16" fill="#f1efe8"/><text x="${x}" y="${y}" fill="${col}" text-anchor="middle">${t}</text>`;
+  let ldSvg;
+  const yLd = yBot + 82;
+  if (support==="ss"){
+    const xm = ex0 + Lpx/2, len = Math.min(g.ld*pxPerMm, Lpx/2);
+    ldSvg = `<line x1="${xm}" y1="${yLd-6}" x2="${xm}" y2="${yLd+6}" stroke="#b3261e" stroke-width="1.2"/>
+      <line x1="${xm}" y1="${yLd}" x2="${xm-len}" y2="${yLd}" stroke="#b3261e" stroke-width="1.2" marker-end="url(#ar)"/>
+      <text x="${xm+8}" y="${yLd+4}" fill="#b3261e">ℓd = ${f(g.ld,0)} mm from midspan (≈ ${f(L*500,0)} mm to support)</text>`;
+  } else {
+    ldSvg = `<text x="${ex0}" y="${yLd+4}" fill="#b3261e">ℓd = ${f(g.ld,0)} mm: ${support==="cant" ? "extend main bars into the back span or support beyond the fixed face" : "extend main bars at least ℓd past each critical section"}</text>`;
+  }
+  const elev = `<svg viewBox="0 0 ${EW} ${EH}" width="${EW}" height="${EH}" ${FONT} font-size="12" fill="#1d2329">
+    <defs><pattern id="hatch2" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#8a8f94" stroke-width="1"/></pattern>
+    <marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#b3261e"/></marker></defs>
+    <text x="${ex0+Lpx/2}" y="${ey-28}" text-anchor="middle" fill="#4b5560">(c) Ø${f(ds,0)} ${legs}-leg stirrups @ ${f(s,0)} c/c${every>1?` (every ${every}th drawn)`:""}</text>
+    <rect x="${ex0}" y="${ey}" width="${Lpx}" height="${bh}" fill="#f1efe8" stroke="#1d2329" stroke-width="1.4"/>
+    ${stir}
+    <line x1="${ex0+4}" y1="${yTb}" x2="${ex1-4}" y2="${yTb}" stroke="#b3261e" stroke-width="3"/>
+    <line x1="${ex0+4}" y1="${yHb}" x2="${ex1-4}" y2="${yHb}" stroke="#1f4e79" stroke-width="2"/>
+    ${supports}
+    ${lab(ex0+Lpx*0.70, tensionTop ? yTb+20 : yTb-8, `(a) ${n}-Ø${f(db,0)} main bars`, "#b3261e")}
+    ${lab(ex0+Lpx*0.30, tensionTop ? yHb-8 : yHb+20, `(b) ${nt}-Ø${f(dbt,0)} hanger bars`, "#1f4e79")}
+    ${dimH(ex0, ex1, yBot+36, `ℓ = ${f(L,2)} m`)}
+    ${ldSvg}
+  </svg>`;
+  return {sec, elev, secW:VW, secH:VH, elevW:EW, elevH:EH};
+}
+
+// ---------- state, buttons, exports ----------
+let dl = null, dlReady = false;
+const toast = (t, bad) => { const el=$("toast"); el.textContent = t; el.style.color = bad ? "var(--fail)" : "var(--accent)"; };
+function updateButtons(){
+  const ready = !!M && !stale;
+  $("copy").disabled = !ready;
+  $("pdf").disabled = !(ready && dl);
+  $("xls").disabled = !(ready && dl);
+}
+(async () => {
+  if (window.claude && window.claude.use){
+    try { dl = await window.claude.use("downloads"); } catch(e){ dl = null; }
+  } else {
+    // Running as a normal web page (for example GitHub Pages): use an ordinary browser download.
+    dl = { save: async ({filename, data}) => {
+      const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data]));
+      const a = document.createElement("a"); a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      return {status:"saved"};
+    }};
+  }
+  dlReady = true; updateButtons();
+  if (!dl) toast("File export is not available in this view. Open the page in Claude to export.");
+})();
+
+function markStale(){ if (M && !stale){ stale = true; $("stale").hidden = false; document.querySelector("aside").classList.add("hints-stale"); updateButtons(); } }
+
+function fileBase(){
+  const m = (M.v.mark || "beam").replace(/[^A-Za-z0-9_-]+/g,"-");
+  return `Beam-design_${m}_${new Date().toISOString().slice(0,10)}`;
+}
+async function save(filename, data){
+  if (!dl) return toast("File export is not available in this view.", true);
+  try { await dl.save({filename, data}); toast("Saved " + filename); }
+  catch(e){ toast(e && e.code === "declined" ? "Export cancelled." : "Export failed: " + ((e && (e.message || e.code)) || "unknown error"), true); }
+}
+
+function svgToPng(svg, w, h){
+  return new Promise((resolve, reject) => {
+    const img = new Image(), t = setTimeout(() => reject(new Error("timeout")), 4000);
+    img.onload = () => { try {
+        clearTimeout(t);
+        const k = 2, cv = document.createElement("canvas"); cv.width = w*k; cv.height = h*k;
+        const cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0,0,cv.width,cv.height); cx.drawImage(img,0,0,cv.width,cv.height);
+        resolve(cv.toDataURL("image/jpeg", 0.9));
+      } catch(e){ reject(e); } };
+    img.onerror = () => { clearTimeout(t); reject(new Error("image load failed")); };
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" '));
+  });
+}
+
+async function buildPdf(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:"mm", format:"a4"});
+  doc.addFileToVFS("DejaVu.ttf", window.BEAM_FONTS.reg); doc.addFont("DejaVu.ttf","DejaVu","normal");
+  doc.addFileToVFS("DejaVu-Bold.ttf", window.BEAM_FONTS.bold); doc.addFont("DejaVu-Bold.ttf","DejaVu","bold");
+  const L = 14, R = 196, W = R - L, INK = [29,35,41], ACC = [31,78,121], GREEN = [30,122,70], RED = [179,38,30], AMB = [122,90,0];
+  const {v, edName} = M;
+  const base = {theme:"grid", margin:{left:L,right:14,top:16,bottom:16},
+    styles:{font:"DejaVu", fontSize:8, cellPadding:1.5, textColor:INK, lineColor:[205,202,192], lineWidth:0.1, overflow:"linebreak"},
+    headStyles:{fillColor:INK, textColor:255, font:"DejaVu", fontStyle:"bold"}};
+  const grpStyle = {fillColor:[240,238,231], textColor:[93,102,112], fontStyle:"bold"};
+  const colourStatus = d => { if (d.section!=="body") return; const t = d.cell.raw;
+    if (t==="PASS"||t==="FAIL"||t==="NOTE"){ d.cell.styles.textColor = t==="PASS"?GREEN:t==="FAIL"?RED:AMB; d.cell.styles.fontStyle="bold"; } };
+  let y;
+  const heading = t => { if (y > 262){ doc.addPage(); y = 18; } doc.setFont("DejaVu","bold"); doc.setFontSize(10.5); doc.setTextColor(...INK); doc.text(t, L, y); y += 2.5; };
+  const after = gap => { y = doc.lastAutoTable.finalY + (gap||8); };
+
+  doc.setFillColor(...INK); doc.rect(0,0,210,24,"F");
+  doc.setTextColor(255); doc.setFont("DejaVu","bold"); doc.setFontSize(13);
+  doc.text("RC Rectangular Beam Design to " + edName, L, 11);
+  doc.setFont("DejaVu","normal"); doc.setFontSize(8.5);
+  doc.text(`Project: ${v.proj || "–"}   |   Beam: ${v.mark || "–"}   |   Date: ${today()}`, L, 18);
+
+  const col = M.allOk ? GREEN : RED;
+  doc.setDrawColor(...col); doc.setFillColor(...(M.allOk ? [227,243,233] : [251,229,227])); doc.roundedRect(L,29,W,17,1.5,1.5,"FD");
+  doc.setTextColor(...col); doc.setFont("DejaVu","bold"); doc.setFontSize(15); doc.text(M.allOk?"PASS":"FAIL", L+4, 39.5);
+  doc.setTextColor(...INK); doc.setFont("DejaVu","normal"); doc.setFontSize(8.3);
+  const vt = `${f(v.b,0)} × ${f(v.h,0)} mm, ${v.n}-Ø${f(v.db,0)} main bars, Ø${f(v.ds,0)} ${v.legs}-leg stirrups @ ${f(v.s,0)} mm. φMn = ${f(M.phiMn,1)} kN·m for Mu = ${f(M.Mu,1)} kN·m; φVn = ${f(M.phiVn,1)} kN for Vu = ${f(M.Vu,1)} kN. ` +
+    (M.allOk ? "All checks satisfied." : `Not satisfied: ${M.failed.map(k=>strip(k.name)).join("; ")}.`);
+  doc.text(doc.splitTextToSize(vt, W-30), L+26, 34.5);
+
+  y = 54; heading("1. Input parameters");
+  doc.autoTable({...base, startY:y, head:[["Parameter","Value","Unit"]], body:M.inRows.map(r=>r.map(strip)), columnStyles:{0:{cellWidth:60},2:{cellWidth:24}}});
+  after();
+
+  heading("2. Check summary");
+  const cb = []; let lg = "", i = 0;
+  M.checks.forEach(k => { if (k.group !== lg){ lg = k.group; cb.push([{content:k.group.toUpperCase(), colSpan:6, styles:grpStyle}]); }
+    cb.push([++i, strip(k.name), k.ref, strip(k.demand), strip(k.capacity), statusOf(k)]); });
+  doc.autoTable({...base, startY:y, head:[["#","Check","Clause","Required","Provided / actual","Status"]], body:cb,
+    columnStyles:{0:{cellWidth:7},5:{cellWidth:16,halign:"center"}}, didParseCell:colourStatus});
+  after();
+
+  heading("3. Design procedure");
+  let lp = "";
+  M.steps.forEach((s,i) => {
+    if (s.part !== lp){ lp = s.part; if (y > 265){ doc.addPage(); y = 18; } doc.setFont("DejaVu","bold"); doc.setFontSize(9); doc.setTextColor(...ACC); doc.text(s.part, L, y+1); y += 4; }
+    const body = s.lines.map(l => [{content:strip(l).replace(/1\/3/g,"1/3"), colSpan:2}]);
+    if (s.note) body.push([{content:strip(s.note), colSpan:2, styles:{textColor:[93,102,112]}}]);
+    doc.autoTable({...base, startY:y, rowPageBreak:"avoid",
+      head:[[`Step ${i+1}. ${strip(s.title)}`, {content:`${edName} ${s.ref}`, styles:{halign:"right"}}]],
+      headStyles:{fillColor:[230,238,246], textColor:ACC, font:"DejaVu", fontStyle:"bold"}, body});
+    after(3);
+  });
+  y += 5;
+
+  heading("4. Outcome and summary");
+  doc.autoTable({...base, startY:y, head:[["Item","Result","Remark","Status"]],
+    body:M.sumRows.map(r => r.g ? [{content:r.g.toUpperCase(), colSpan:4, styles:grpStyle}] : r.map(strip)),
+    foot:[M.outcomeRow.map(strip)], showFoot:"lastPage",
+    footStyles:{fillColor:[240,238,231], textColor:M.allOk?GREEN:RED, font:"DejaVu", fontStyle:"bold"},
+    columnStyles:{0:{cellWidth:46},1:{cellWidth:46},3:{cellWidth:16,halign:"center"}}, didParseCell:colourStatus});
+  after();
+  if (M.actions.length){
+    heading("Items to resolve");
+    doc.autoTable({...base, startY:y, head:[["Check","Clause","Required","Actual","Action"]], body:M.actions.map(r=>r.map(strip))});
+    after();
+  }
+  doc.setFont("DejaVu","normal"); doc.setFontSize(8); doc.setTextColor(93,102,112);
+  const sn = doc.splitTextToSize(SCOPE_NOTE, W); if (y + sn.length*4 > 275){ doc.addPage(); y = 18; }
+  doc.text(sn, L, y); y += sn.length*4 + 6;
+
+  // 5 reinforcement detail
+  doc.addPage(); y = 18;
+  heading("5. Reinforcement detail");
+  y += 3;
+  const det = detailSvgs(M);
+  let drew = false;
+  try {
+    const [p1, p2] = await Promise.all([svgToPng(det.sec, det.secW, det.secH), svgToPng(det.elev, det.elevW, det.elevH)]);
+    const w1 = W, h1 = w1*det.secH/det.secW, w2 = W, h2 = w2*det.elevH/det.elevW;
+    doc.addImage(p1, "JPEG", L, y, w1, h1); y += h1 + 1;
+    doc.setFont("DejaVu","normal"); doc.setFontSize(7.5); doc.setTextColor(93,102,112); doc.text("Cross-section at maximum moment (to scale)", L+W/2, y+2, {align:"center"}); y += 7;
+    doc.addImage(p2, "JPEG", L, y, w2, h2); y += h2 + 1;
+    doc.text("Elevation (length to scale, depth exaggerated)", L+W/2, y+2, {align:"center"}); y += 8;
+    drew = true;
+  } catch(e){ /* fall back to a vector sketch */ }
+  if (!drew){ pdfFigure(doc, L, y + 4, M.geo); y += 80; }
+
+  heading("Bar schedule");
+  doc.autoTable({...base, startY:y, head:[["Mark","Description","Location","No.","Dia (mm)","Spacing (mm)","Remark"]], body:M.schedule.map(r=>r.map(c=>strip(String(c))))});
+  after(8);
+
+  heading("6. References");
+  doc.autoTable({...base, theme:"plain", startY:y, body:REFS.map((r,i)=>[`${i+1}.`, strip(r)]), columnStyles:{0:{cellWidth:8}}, styles:{...base.styles, lineWidth:0}});
+  after(10);
+
+  if (y > 275){ doc.addPage(); y = 20; }
+  doc.setDrawColor(205,202,192); doc.setLineWidth(0.2); doc.line(L, y, R, y);
+  doc.setFont("DejaVu","normal"); doc.setFontSize(8.5); doc.setTextColor(93,102,112);
+  doc.text("Developed by " + AUTHOR, L + W/2, y + 6, {align:"center"});
+
+  const pages = doc.getNumberOfPages();
+  for (let i=1;i<=pages;i++){
+    doc.setPage(i); doc.setFont("DejaVu","normal"); doc.setFontSize(7.5); doc.setTextColor(93,102,112);
+    doc.text(`RC beam design, ${edName}${v.mark ? "   |   Beam " + v.mark : ""}`, L, 290);
+    doc.text(`Page ${i} of ${pages}`, R, 290, {align:"right"});
+  }
+  return doc.output("arraybuffer");
+}
+
+function pdfFigure(doc, x0, y0, g){
+  const {b,h,d,n,db,nt,dbt,ds,legs,s,cov,tensionTop} = g;
+  const sc = Math.min(65/h, 45/b), W = b*sc, H = h*sc, x = x0 + 20;
+  const inner = b - 2*cov - 2*ds;
+  doc.setLineWidth(0.4); doc.setDrawColor(29,35,41); doc.setFillColor(241,239,232); doc.rect(x,y0,W,H,"FD");
+  doc.setDrawColor(75,85,96); doc.setLineWidth(Math.max(ds*sc,0.3)); doc.rect(x+(cov+ds/2)*sc, y0+(cov+ds/2)*sc, W-2*(cov+ds/2)*sc, H-2*(cov+ds/2)*sc, "S");
+  const yT = tensionTop ? y0+(cov+ds+db/2)*sc : y0+(h-cov-ds-db/2)*sc, yH = tensionTop ? y0+(h-cov-ds-dbt/2)*sc : y0+(cov+ds+dbt/2)*sc;
+  doc.setFillColor(179,38,30);
+  for (let i=0;i<n;i++){ const bx = n>1 ? cov+ds+db/2 + i*(inner-db)/(n-1) : b/2; doc.circle(x+bx*sc, yT, db/2*sc, "F"); }
+  doc.setFillColor(31,78,121);
+  for (let i=0;i<nt;i++){ const bx = nt>1 ? cov+ds+dbt/2 + i*(inner-dbt)/(nt-1) : b/2; doc.circle(x+bx*sc, yH, dbt/2*sc, "F"); }
+  doc.setFillColor(122,90,0);
+  for (let i=1;i<=(g.nside||0);i++){ const yy = yT + (yH-yT)*i/(g.nside+1); [cov+ds+g.dbs/2, b-cov-ds-g.dbs/2].forEach(xx => doc.circle(x+xx*sc, yy, g.dbs/2*sc, "F")); }
+  doc.setFont("DejaVu","normal"); doc.setFontSize(8.5);
+  const tx = x + W + 12;
+  doc.setTextColor(179,38,30); doc.text(`(a) ${n}-Ø${f(db,0)} main bars, As = ${f(M.AsProv,0)} mm²`, tx, yT);
+  doc.setTextColor(31,78,121); doc.text(`(b) ${nt}-Ø${f(dbt,0)} hanger bars (nominal)`, tx, yH);
+  doc.setTextColor(75,85,96); doc.text(`(c) Ø${f(ds,0)} stirrups, ${legs} legs @ ${f(s,0)} c/c, cover ${f(cov,0)} mm`, tx, y0+H/2);
+  doc.setTextColor(29,35,41); doc.text(`b = ${f(b,0)} mm, h = ${f(h,0)} mm, d = ${f(d,1)} mm`, x, y0+H+6);
+}
+
+function buildXlsx(){
+  const X = window.XLSX, {v, edName} = M, wb = X.utils.book_new();
+  const add = (name, aoa, widths) => { const ws = X.utils.aoa_to_sheet(aoa); ws["!cols"] = widths.map(w=>({wch:w})); X.utils.book_append_sheet(wb, ws, name); };
+  add("Summary", [
+    ["RC rectangular beam design"],
+    ["Design code", edName], ["Project", v.proj || ""], ["Beam mark", v.mark || ""], ["Date", today()], [],
+    ["Item","Result","Remark","Status"], ...M.sumRows.map(r => r.g ? [r.g.toUpperCase()] : r.map(strip)), M.outcomeRow.map(strip), [],
+    ...(M.actions.length ? [["Items to resolve"],["Check","Clause","Required","Actual","Action"], ...M.actions.map(r=>r.map(strip)), []] : []),
+    [SCOPE_NOTE], [], ["Developed by " + AUTHOR]
+  ], [36,36,60,10,50]);
+  const raw = {L:"m",Mu:"kN·m",Vu:"kN",Tu:"kN·m",nside:"nos per face",dbs:"mm",fc:"MPa",fy:"MPa",fyt:"MPa",Es:"MPa",ecu:"",b:"mm",h:"mm",n:"nos",db:"mm",nt:"nos",dbt:"mm",ds:"mm",legs:"nos",s:"mm",cov:"mm",agg:"mm"};
+  const lab = {L:"Span, L",Mu:"Factored moment, Mu",Vu:"Factored shear, Vu",Tu:"Factored torque, Tu",nside:"Side bars, number",dbs:"Side bar diameter",fc:"Concrete strength, f'c",fy:"Main bar yield, fy",fyt:"Stirrup yield, fyt",Es:"Steel modulus, Es",ecu:"Ultimate concrete strain, εcu",b:"Width, bw",h:"Overall depth, h",n:"Main bars, number",db:"Main bar diameter",nt:"Hanger bars, number",dbt:"Hanger bar diameter",ds:"Stirrup diameter",legs:"Stirrup legs",s:"Stirrup spacing",cov:"Clear cover to stirrup",agg:"Max aggregate size"};
+  add("Inputs", [["Parameter","Value","Unit"], ["Code edition", edName, ""], ["Support condition", SUP_NAME[v.support], ""], ["Exposure", EXP_NAME[v.exposure], ""], ["Torsion type", v.ttype==="comp"?"Compatibility":"Equilibrium", ""],
+    ...Object.keys(raw).map(k=>[lab[k], v[k], raw[k]]),
+    ["Effective depth used, d", +M.geo.d.toFixed(2), "mm"], ["Source of d", v.dmode==="detail" ? "From detailing" : "Entered value", ""]], [34,30,10]);
+  const proc = [["Step","Title","Clause","Calculation"]]; let lp = "";
+  M.steps.forEach((s,i) => { if (s.part !== lp){ lp = s.part; proc.push(["", s.part.toUpperCase()]); }
+    s.lines.forEach((l,j) => proc.push([j?"":i+1, j?"":strip(s.title), j?"":`${edName} ${s.ref}`, strip(l)])); if (s.note) proc.push(["","","", "Note: " + strip(s.note)]); });
+  add("Procedure", proc, [6,38,32,130]);
+  const ch = [["#","Group","Check","Clause","Required","Provided / actual","Status"]];
+  M.checks.forEach((k,i)=>ch.push([i+1, k.group, strip(k.name), k.ref, strip(k.demand), strip(k.capacity), statusOf(k)]));
+  add("Checks", ch, [5,22,40,24,26,30,10]);
+  add("Bar schedule", [["Mark","Description","Location","No.","Dia (mm)","Spacing (mm)","Remark"], ...M.schedule.map(r=>r.map(c=>strip(String(c))))], [7,30,14,8,10,14,28]);
+  add("References", [["#","Reference"], ...REFS.map((r,i)=>[i+1, strip(r)]), [], ["Developed by " + AUTHOR]], [12,150]);
+  return X.write(wb, {type:"array", bookType:"xlsx"});
+}
+
+function reportText(){
+  if (!M) return "";
+  const {v, edName} = M;
+  return [
+    "RC RECTANGULAR BEAM DESIGN - " + edName,
+    `Project: ${v.proj||"-"}   Beam: ${v.mark||"-"}   Date: ${today()}`, "",
+    "INPUTS", ...M.inRows.map(r=>`  ${strip(r[0])}: ${strip(r[1])} ${r[2]}`), "",
+    "PROCEDURE", ...M.steps.map((s,i)=>`  Step ${i+1}. ${strip(s.title)} [${edName} ${s.ref}]\n` + s.lines.map(l=>"    "+strip(l)).join("\n")), "",
+    "CHECKS", ...M.checks.map((k,i)=>`  ${i+1}. [${k.group}] ${strip(k.name)} [${k.ref}]  req: ${strip(k.demand)}  act: ${strip(k.capacity)}  -> ${statusOf(k)}`), "",
+    "OUTCOME AND SUMMARY", ...[...M.sumRows.filter(r=>!r.g), M.outcomeRow].map(r=>`  ${strip(r[0])}: ${strip(r[1])}${r[2]?"  ("+strip(r[2])+")":""}${r[3]?"  -> "+r[3]:""}`),
+    ...(M.actions.length ? ["", "ITEMS TO RESOLVE", ...M.actions.map(r=>`  ${strip(r[0])} [${r[1]}]: ${strip(r[4])}`)] : []), "",
+    "BAR SCHEDULE", ...M.schedule.map(r=>`  (${r[0]}) ${r[1]}, ${r[2]}: ${r[3]} x Ø${r[4]} ${r[5]!=="–"?"@ "+r[5]:""}`), "",
+    SCOPE_NOTE, "", "Developed by " + AUTHOR
+  ].join("\n");
+}
+
+// ---------- wiring ----------
+ids.forEach(k => $(k).value = DEFAULTS[k]);
+$("refs").innerHTML = REFS.map(r=>`<li>${r}</li>`).join("");
+const syncD = () => { $("d").disabled = $("dmode").value === "detail"; };
+syncD();
+$("form").addEventListener("submit", e => { e.preventDefault(); calculate(); });
+$("form").addEventListener("input", e => { if (e.target.id === "dmode") syncD(); markStale(); });
+$("form").addEventListener("change", e => { if (e.target.id === "dmode") syncD(); markStale(); });
+$("pdf").addEventListener("click", async () => {
+  if (!M || stale) return toast("Click Calculate first.", true);
+  toast("Building PDF…");
+  try { const data = await buildPdf(); await save(fileBase()+".pdf", data); } catch(e){ toast("Could not build the PDF: " + e.message, true); }
+});
+$("xls").addEventListener("click", () => {
+  if (!M || stale) return toast("Click Calculate first.", true);
+  try { save(fileBase()+".xlsx", buildXlsx()); } catch(e){ toast("Could not build the Excel file: " + e.message, true); }
+});
+$("copy").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(reportText()); toast("Report text copied."); }
+  catch(e){ toast("Copy was blocked by the browser.", true); }
+});
+</script>
+</body>
+</html>
